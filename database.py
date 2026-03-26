@@ -29,6 +29,20 @@ class DatabaseManager:
 
         self.connect.commit()
 
+    def execute_query(self, query, params=None):
+        if params:
+            self.cursor.execute(query, params)
+        else:
+            self.cursor.execute(query)
+        self.connect.commit()
+
+    def fetch_query(self, query, params=None):
+        if params:
+            self.cursor.execute(query, params)
+        else:
+            self.cursor.execute(query)
+        return self.cursor.fetchall()
+
     def add_dummy_data(self):
         self.cursor.execute("SELECT count(*) FROM books")
         if self.cursor.fetchone()[0] > 0:
@@ -58,8 +72,8 @@ class DatabaseManager:
         self.cursor.executemany("INSERT INTO book_items VALUES (?, ?, ?, ?)", items)
 
         members = [
-            ("Abdallah said", "ID-001", "abdallah@gmail.com", 0),
-            ("Eman said", "ID-002", "Eman@gmail.com", 0)
+            ("Abdallah said", "ID-MEM-001", "abdallah@gmail.com", 0),
+            ("Eman said", "ID-MEM-002", "Eman@gmail.com", 0)
         ]
         self.cursor.executemany("INSERT INTO members VALUES (?, ?, ?, ?)", members)
 
@@ -71,8 +85,3 @@ class DatabaseManager:
         self.connect.close()
 
 
-if __name__ == '__main__':
-    db = DatabaseManager()
-    db.add_dummy_data()
-    print("Library database created successfully")
-    db.close()
