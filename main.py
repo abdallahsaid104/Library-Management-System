@@ -1,6 +1,8 @@
 from database import DatabaseManager
 from book import Book
 from person import Member, Librarian
+from services.librarian_service import LibrarianService
+from services.member_service import MemberService
 
 
 def main():
@@ -10,18 +12,24 @@ def main():
 
     print("\n********************* Library System Test *********************")
 
+    print("\n********************* ADD Book Phase *********************")
+    LibrarianService.add_book_item("B0020", "9780132350884", "D5")
+
     print("\n********************* Checkout Phase *********************")
     member1 = Member.get_member("ID-MEM-001")
-    member1.checkout_book("B0007")
+    if member1:
+        MemberService.checkout_book(member1, "B0007")
 
     print("\n********************* Reservation Phase *********************")
     member2 = Member.get_member("ID-MEM-002")
-    member2.checkout_book("B0007")
+    if member2:
+        MemberService.checkout_book(member2, "B0007")
 
-    member2.reserve_book("9780132350884")
+        MemberService.reserve_book(member2, "9780132350884")
 
     print("\n********************* Return & Notification Phase *********************")
-    member1.return_book("B0007")
+    if member1:
+        MemberService.return_book(member1, "B0007")
 
 
 if __name__ == '__main__':
