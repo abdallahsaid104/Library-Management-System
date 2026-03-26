@@ -1,5 +1,6 @@
 from database import DatabaseManager
 from datetime import datetime, timedelta
+from notification import EmailNotification
 
 
 class Person:
@@ -86,8 +87,19 @@ class Member(Person):
         today = datetime.now().date()
         fine = self.calculate_fine(today, due_date)
         self.update_db_on_return(db, barcode, loan_id, today, fine)
-
+        self.check_reservations(db, barcode)
         return True
+
+    def calculate_fine(self, today, due_date):
+        fine = 0
+        if today > due_date:
+            days_late = (today-due_date).days
+            fine = days_late * self.FinePerDay
+            print(f"Book is {days_late} days late : Fine ----> {fine} Egyptian bound")
+        else:
+            print(f"Book is returned on time, No Fine")
+
+        return fine
 
     def update_db_on_return(self, db: DatabaseManager, barcode, loan_id, today, fine):
         query = "UPDATE loans SET return_date = ?, fine_amount = ? WHERE loan_id = ?"
@@ -100,19 +112,43 @@ class Member(Person):
         db.execute_query(query, (self.id,))
         self.checkout_count -= 1
 
-        db.close()
         print(f"Success: Book {barcode} returned.")
 
-    def calculate_fine(self, today, due_date):
-        fine = 0
-        if today > due_date:
-            days_late = (today-due_date).days
-            fine = days_late * self.FinePerDay
-            print(f"Book is {days_late} days late : Fine ----> {fine} Egyptian bound")
-        else:
-            print(f"Book is returned on time, No Fine")
+    @staticmethod
+    def check_reservations(db: DatabaseManager, barcode):
+        query = "SELECT isbn FROM book_items WHERE barcode = ?"
+        item = db.fetch_query(query, (barcode,))
+        if not item:
+            return
+        isbn = item[0][0]
 
-        return fine
+        query = """SELECT member_id From reservations WHERE isbn = ? 
+                    And status = 'waiting' ORDER BY reservation_date ASC LIMIT 1"""
+        reservation = db.fetch_query(query, (isbn,))
+        if reservation:
+            member_id = reservation[0][0]
+            member = Member.get_member(member_id)
+            if member:
+                notifier = EmailNotification()
+                notifier.send(member, f"The book {isbn} you reserved is now available")
+
+                query = "UPDATE reservations SET status = 'notified' WHERE member_id = ? AND isbn = ?"
+                db.execute_query(query, (member_id, isbn))
+
+    def reserve_book(self, isbn):
+        db = DatabaseManager()
+        query = "SELECT title FROM books WHERE isbn = ?"
+        book = db.fetch_query(query, (isbn,))
+        if not book:
+            print(f"ERROR: book does not exist")
+            db.close()
+            return
+
+        today = datetime.now().date()
+        query = "INSERT INTO reservations (member_id, isbn, reservation_date) VALUES (?, ?, ?)"
+        db.execute_query(query, (self.id, isbn, str(today)))
+        print(f"Success: you have been added to the waiting list for {book[0][0]}")
+        db.close()
 
     @staticmethod
     def get_borrowed_books(member_id):
@@ -150,5 +186,3 @@ class Librarian(Person):
         db.execute_query(query, (barcode, isbn, rack))
         db.close()
         print(f"New book item {barcode} added to rack {rack}.")
-
-
