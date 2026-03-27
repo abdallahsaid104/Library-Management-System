@@ -96,7 +96,8 @@ class MemberService:
         info = db.fetch_query("SELECT isbn FROM book_items WHERE barcode = ?", (barcode,))
         if info:
             isbn = info[0][0]
-            reservation = db.fetch_query("SELECT * FROM reservations WHERE isbn = ? AND status = 'waiting' LIMIT 1", (isbn,))
+            reservation = db.fetch_query("SELECT * FROM reservations WHERE isbn = ? AND status = 'waiting' LIMIT 1",
+                                         (isbn,))
             if reservation:
                 print(f"ERROR: This book {isbn} is reserved by another member.")
                 db.close()
@@ -108,3 +109,24 @@ class MemberService:
         db.close()
 
         print(f"Success: Book renewed New due date: {new_due_date}")
+
+    @staticmethod
+    def cancel_reservation(member, isbn):
+        db = DatabaseManager()
+
+        reservation = db.fetch_query(
+            "SELECT * FROM reservations WHERE member_id = ? AND isbn = ? AND status = 'waiting'",
+            (member.id, isbn)
+            )
+
+        if not reservation:
+            print("Error: There is no reservation found for this book")
+            db.close()
+            return
+
+        db.execute_query(
+            "DELETE FROM reservations WHERE member_id = ? AND isbn = ? AND status = 'waiting'",
+            (member.id, isbn)
+        )
+        db.close()
+        print(f"Success: Reservation for this book {isbn} is cancelled")

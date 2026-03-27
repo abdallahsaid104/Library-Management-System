@@ -12,6 +12,7 @@ def main():
     db.close()
 
     print("\n********************* Library System Test *********************")
+
     print("\n********************* ADD Book Phase *********************")
     LibrarianService.add_book_item("B0020", "9780132350884", "D5")
 
@@ -24,7 +25,6 @@ def main():
     member2 = Member.get_member("ID-MEM-002")
     if member2:
         MemberService.checkout_book(member2, "B0007")
-
         MemberService.reserve_book(member2, "9780132350884")
 
     print("\n********************* Librarian Report Phase *********************")
@@ -46,6 +46,21 @@ def main():
 
     print("\n********************* System Overdue Check *********************")
     NotificationService.check_overdue()
+
+    print("\n********************* Management Phase *********************")
+
+    LibrarianService.add_new_book("999-999", "The Future of AI", "Tech Author", "Technology", "2025-01-01")
+    LibrarianService.edit_book("999-999", new_title="The Future of AI (2nd Edition)")
+
+    LibrarianService.cancel_membership("ID-MEM-002")
+
+    if member1:
+        MemberService.reserve_book(member1, "9780735211292")
+        MemberService.cancel_reservation(member1, "9780735211292")
+
+    LibrarianService.remove_book_item("B0020")
+
+    LibrarianService.remove_book("999-999")
 
     print("\n********************* Test Complete *********************")
 
