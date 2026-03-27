@@ -36,8 +36,10 @@ class MemberService:
     @staticmethod
     def return_book(member, barcode):
         db = DatabaseManager()
-        loan = db.fetch_query("SELECT loan_id, due_date FROM loans WHERE book_barcode = ? AND return_date IS NULL",
-                              (barcode,))
+        loan = db.fetch_query(
+            "SELECT loan_id, due_date FROM loans WHERE book_barcode = ? AND member_id = ? AND return_date IS NULL",
+            (barcode, member.id)
+        )
         if not loan:
             print(f"ERROR: No active loan found for book {barcode}")
             db.close()
