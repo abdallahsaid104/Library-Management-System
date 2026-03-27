@@ -41,17 +41,18 @@ def main():
     print("\n********************* Query Specific Book *********************")
     if member2:
         MemberService.checkout_book(member2, "B0007")
-
     LibrarianService.get_book_borrower("B0007")
+
+    print("\n********************* Member Books Query *********************")
+    if member2:
+        MemberService.get_member_books(member2.id)
 
     print("\n********************* System Overdue Check *********************")
     NotificationService.check_overdue()
 
     print("\n********************* Management Phase *********************")
-
     LibrarianService.add_new_book("999-999", "The Future of AI", "Tech Author", "Technology", "2025-01-01")
     LibrarianService.edit_book("999-999", new_title="The Future of AI (2nd Edition)")
-
     LibrarianService.cancel_membership("ID-MEM-002")
 
     if member1:
@@ -59,7 +60,6 @@ def main():
         MemberService.cancel_reservation(member1, "9780735211292")
 
     LibrarianService.remove_book_item("B0020")
-
     LibrarianService.remove_book("999-999")
 
     print("\n********************* Test Complete *********************")

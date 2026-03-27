@@ -1,7 +1,12 @@
-from database import DatabaseManager
-from services.notification_service import NotificationService, EmailNotification
 from person import Member
 from datetime import datetime
+from datetime import datetime
+from person import Member
+from services.notification_service import EmailNotification
+from repositories.member_repository import MemberRepository
+from repositories.book_repository import BookRepository
+from repositories.loan_repository import LoanRepository
+from services.notification_service import NotificationService
 
 
 class MemberService:
@@ -12,37 +17,26 @@ class MemberService:
             print(f"ERROR: {member.name} has reached the maximum limit {member.MaxBooksLimit}")
             return
 
-        db = DatabaseManager()
-        item = db.fetch_query("SELECT * FROM book_items WHERE barcode = ? AND status = 'available'", (barcode,))
-        if not item:
-            print(f"ERROR: Book item {barcode} is not available.")
-            db.close()
-            return
+        book_item = BookRepository.get_book_item(barcode)
+        if not book_item or book_item[0][3] != 'available':
+            print("ERROR: Book not available.")
+            return False
 
         due_date = member.get_due_date()
         today = datetime.now().date()
 
-        db.execute_query("UPDATE book_items SET status = 'loaned' WHERE barcode = ?", (barcode,))
-
-        db.execute_query("INSERT INTO loans (member_id, book_barcode, issue_date, due_date) VALUES (?, ?, ?, ?)",
-                         (member.id, barcode, str(today), str(due_date)))
-
-        db.execute_query("UPDATE members SET checkout_count = checkout_count + 1 WHERE member_id = ?", (member.id,))
-        db.close()
+        BookRepository.update_item_status(barcode, 'loaned')
+        LoanRepository.create_loan(member.id, barcode, today, due_date)
+        MemberRepository.update_checkout_count(member.id, increment=True)
 
         member.checkout_count += 1
         print(f"Success: book {barcode} checked out to {member.name} due to {due_date}")
 
     @staticmethod
     def return_book(member, barcode):
-        db = DatabaseManager()
-        loan = db.fetch_query(
-            "SELECT loan_id, due_date FROM loans WHERE book_barcode = ? AND member_id = ? AND return_date IS NULL",
-            (barcode, member.id)
-        )
+        loan = LoanRepository.get_active_loan_for_member(barcode, member.id)
         if not loan:
             print(f"ERROR: No active loan found for book {barcode}")
-            db.close()
             return
 
         loan_id = loan[0][0]
@@ -50,87 +44,69 @@ class MemberService:
         today = datetime.now().date()
         fine = member.calculate_fine(today, due_date)
 
-        db.execute_query("UPDATE loans SET return_date = ?, fine_amount = ? WHERE loan_id = ?",
-                         (str(today), fine, loan_id))
-        db.execute_query("UPDATE book_items SET status = 'available' WHERE barcode = ?", (barcode,))
-        db.execute_query("UPDATE members SET checkout_count = checkout_count - 1 WHERE member_id = ?", (member.id,))
-
-        NotificationService.notify_reserved_members(db, barcode)
-
-        db.close()
+        LoanRepository.close_loan(loan_id, today, fine)
+        BookRepository.update_item_status(barcode, 'available')
+        MemberRepository.update_checkout_count(member.id, increment=False)
         member.checkout_count -= 1
-        print(f"Success: Book returned.")
+        NotificationService.notify_reserved_members(barcode)
+        print(f"Success: Book returned")
 
     @staticmethod
     def reserve_book(member, isbn):
-        db = DatabaseManager()
-        book = db.fetch_query("SELECT title FROM books WHERE isbn = ?", (isbn,))
+        book = BookRepository.get_book_by_isbn(isbn)
         if not book:
             print(f"ERROR: book does not exist")
-            db.close()
             return
 
         today = datetime.now().date()
-        db.execute_query("INSERT INTO reservations (member_id, isbn, reservation_date) VALUES (?, ?, ?)",
-                         (member.id, isbn, str(today)))
+        MemberRepository.add_reservation(member.id, isbn, today)
         print(f"Success: Reserved '{book[0][0]}'.")
-        db.close()
 
     @staticmethod
     def renew_book(member, barcode):
-        db = DatabaseManager()
-
-        loan = db.fetch_query(
-            "SELECT loan_id, due_date FROM loans WHERE book_barcode = ? AND member_id = ? AND return_date IS NULL",
-            (barcode, member.id)
-        )
-
+        loan = LoanRepository.get_active_loan_for_member(barcode, member.id)
         if not loan:
             print("No active loan found for this member.")
-            db.close()
             return
 
         loan_id = loan[0][0]
 
-        # Check if someone reserved it (No allow if it reserved)
-        info = db.fetch_query("SELECT isbn FROM book_items WHERE barcode = ?", (barcode,))
+        info = BookRepository.get_book_item(barcode)
         if info:
-            isbn = info[0][0]
-            reservation = db.fetch_query("SELECT * FROM reservations WHERE isbn = ? AND status = 'waiting' LIMIT 1",
-                                         (isbn,))
+            isbn = info[0][1]
+            reservation = MemberRepository.get_waiting_reservation(isbn)
             if reservation:
                 print(f"ERROR: This book {isbn} is reserved by another member.")
-                db.close()
                 return
 
         new_due_date = member.get_due_date()
 
-        db.execute_query("UPDATE loans SET due_date = ? WHERE loan_id = ?", (str(new_due_date), loan_id))
-        db.close()
+        LoanRepository.update_loan_due_date(loan_id, new_due_date)
 
         print(f"Success: Book renewed New due date: {new_due_date}")
 
     @staticmethod
     def cancel_reservation(member, isbn):
-        db = DatabaseManager()
-
-        reservation = db.fetch_query(
-            "SELECT * FROM reservations WHERE member_id = ? AND isbn = ? AND status = 'waiting'",
-            (member.id, isbn)
-            )
+        reservation = MemberRepository.get_reservation(member.id, isbn)
 
         if not reservation:
             print("Error: There is no reservation found for this book")
-            db.close()
             return
 
-        db.execute_query(
-            "DELETE FROM reservations WHERE member_id = ? AND isbn = ? AND status = 'waiting'",
-            (member.id, isbn)
-        )
-        db.close()
+        MemberRepository.cancel_reservation(member.id, isbn)
 
         notifier = EmailNotification()
         notifier.send(member, f"Your reservation for book (ISBN: {isbn}) has been successfully cancelled.")
 
         print(f"Success: Reservation for this book {isbn} is cancelled")
+
+    @staticmethod
+    def get_member_books(member_id):
+        books = LoanRepository.get_borrowed_books_by_member(member_id)
+        if not books:
+            print(f"\nNo books currently checked out for member {member_id}")
+            return
+
+        print(f"\nBooks Checked Out by {member_id}")
+        for book in books:
+            print(f"- Title: {book[0]} | Barcode: {book[1]} | Due: {book[2]}")

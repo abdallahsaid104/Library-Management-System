@@ -1,188 +1,106 @@
-from database import DatabaseManager
+from repositories.book_repository import BookRepository
+from repositories.member_repository import MemberRepository
+from repositories.loan_repository import LoanRepository
 
 
 class LibrarianService:
 
     @staticmethod
     def add_new_book(isbn, title, author, subject, publication_date):
-        db = DatabaseManager()
-
-        book = db.fetch_query("SELECT * FROM books WHERE isbn = ?", (isbn,))
+        book = BookRepository.get_book_by_isbn(isbn)
         if book:
             print(f"Error: Book with ISBN {isbn} already exists")
-            db.close()
             return
 
-        db.execute_query("INSERT INTO books (isbn, title, author, subject, publication_date) VALUES (?, ?, ?, ?, ?)",
-                         (isbn, title, author, subject, publication_date)
-                         )
-        db.close()
+        BookRepository.add_book(isbn, title, author, subject, publication_date)
         print(f"Success: Book '{title}' added to catalog.")
-        return True
 
     @staticmethod
     def add_book_item(barcode, isbn, rack):
-        db = DatabaseManager()
-        item = db.fetch_query("SELECT * FROM book_items WHERE barcode = ?", (barcode,))
+        item = BookRepository.get_book_item(barcode)
         if item:
             print(f"Error: Barcode {barcode} already exist")
-            db.close()
             return
 
-        book = db.fetch_query("SELECT * FROM books WHERE isbn = ?", (isbn,))
+        book = BookRepository.get_book_by_isbn(isbn)
         if not book:
             print("Error: ISBN not in catalog.")
-            db.close()
             return
 
-        db.execute_query("INSERT INTO book_items (barcode, isbn, rack_number, status) VALUES (?, ?, ?, 'available')",
-                         (barcode, isbn, rack))
-        db.close()
+        BookRepository.add_book_item(barcode, isbn, rack)
         print(f"New book item {barcode} added to rack {rack}.")
 
     @staticmethod
     def edit_book(isbn, new_title=None, new_author=None, new_subject=None):
-        db = DatabaseManager()
-
-        book = db.fetch_query("SELECT * FROM books WHERE isbn = ?", (isbn,))
+        book = BookRepository.get_book_by_isbn(isbn)
         if not book:
-            print(f"Error: Book ISBN {isbn} not found.")
-            db.close()
+            print(f"Error: Book ISBN {isbn} not found")
             return
 
-        updates = []
-        params = []
-
-        if new_title:
-            updates.append("title = ?")
-            params.append(new_title)
-        if new_author:
-            updates.append("author = ?")
-            params.append(new_author)
-        if new_subject:
-            updates.append("subject = ?")
-            params.append(new_subject)
-
-        if not updates:
-            print("There is nothing to update")
-            db.close()
-            return
-
-        params.append(isbn)
-        query = f"UPDATE books SET {', '.join(updates)} WHERE isbn = ?"
-
-        db.execute_query(query, tuple(params))
-        db.close()
+        BookRepository.update_book(isbn, new_title, new_author, new_subject)
         print(f"Success: Book {isbn} details updated")
 
     @staticmethod
     def edit_book_item(barcode, new_rack=None, new_status=None):
-        db = DatabaseManager()
-
-        item = db.fetch_query("SELECT * FROM book_items WHERE barcode = ?", (barcode,))
+        item = BookRepository.get_book_item(barcode)
         if not item:
             print(f"Error: Item {barcode} not found.")
-            db.close()
             return
 
-        updates = []
-        params = []
-
-        if new_rack:
-            updates.append("rack_number = ?")
-            params.append(new_rack)
-        if new_status:
-            updates.append("status = ?")
-            params.append(new_status)
-
-        if not updates:
-            print("There is nothing to update")
-            db.close()
-            return
-
-        params.append(barcode)
-        query = f"UPDATE book_items SET {', '.join(updates)} WHERE barcode = ?"
-
-        db.execute_query(query, tuple(params))
-        db.close()
+        BookRepository.update_book_item(barcode, new_rack, new_status)
         print(f"Success: Item {barcode} updated")
 
     @staticmethod
     def remove_book(isbn):
-        db = DatabaseManager()
-
-        items = db.fetch_query("SELECT * FROM book_items WHERE isbn = ? AND status = 'loaned'", (isbn,))
-        if items:
+        items = BookRepository.get_book_by_isbn(isbn)
+        loan = LoanRepository.get_active_loan_for_isbn(isbn)
+        if loan:
             print(f"Error: we can not remove this book as there are {len(items)} copies currently checked out")
             print("Please wait for all copies to be returned before removing this title")
-            db.close()
             return
 
-        db.execute_query("DELETE FROM book_items WHERE isbn = ?", (isbn,))
-        db.execute_query("DELETE FROM books WHERE isbn = ?", (isbn,))
-        db.close()
+        BookRepository.remove_items_by_isbn(isbn)
+        BookRepository.remove_book(isbn)
 
         print(f"Success: Book {isbn} and its items have been removed from the system")
 
     @staticmethod
     def remove_book_item(barcode):
-        db = DatabaseManager()
-
-        item = db.fetch_query("SELECT * FROM book_items WHERE barcode = ?", (barcode,))
+        item = BookRepository.get_book_item(barcode)
         if not item:
             print(f"Error: Item {barcode} not found.")
-            db.close()
             return
 
         if item[0][3] == 'loaned':
             print("Error: Cannot remove this book as it is currently checked out")
-            db.close()
             return
 
-        db.execute_query("DELETE FROM book_items WHERE barcode = ?", (barcode,))
-        db.close()
+        BookRepository.remove_book_item(barcode)
         print(f"Success: Book item {barcode} removed.")
 
     @staticmethod
     def register_member(name, member_id, email):
-        db = DatabaseManager()
-
-        if db.fetch_query("SELECT * FROM members WHERE member_id = ?", (member_id,)):
+        member = MemberRepository.get_member(member_id)
+        if member:
             print(f"Error: Member {member_id} already exists")
-            db.close()
             return
 
-        db.execute_query("INSERT INTO members (name, member_id, email, checkout_count) VALUES (?, ?, ?, 0)",
-                         (name, member_id, email)
-                         )
-        db.close()
+        MemberRepository.add_member(name, member_id, email)
         print(f"Success: Member '{name}' registered.")
 
     @staticmethod
     def get_book_borrower(barcode):
-        db = DatabaseManager()
+        member = LoanRepository.get_borrower_info(barcode)
 
-        query = """SELECT m.name, m.member_id, m.email, l.due_date FROM loans l
-                JOIN members m ON l.member_id = m.member_id WHERE l.book_barcode = ? AND l.return_date IS NULL"""
-        books = db.fetch_query(query, (barcode,))
-        db.close()
-
-        if books:
-            book = books[0]
-            print(f"Book {barcode} is currently borrowed by: {book[0]} (ID: {book[1]})")
-            print(f"Email: {book[2]} | Due Date: {book[3]}")
+        if member:
+            print(f"Book {barcode} is currently borrowed by: {member[0][0]} (ID: {member[0][1]})")
+            print(f"Email: {member[0][2]} | Due Date: {member[0][3]}")
         else:
-            print(f"Book {barcode} is currently available (not checked out).")
+            print(f"Book {barcode} is currently available (not checked out)")
 
     @staticmethod
     def get_borrowed_books(member_id):
-        db = DatabaseManager()
-
-        query = """SELECT b.title, l.book_barcode, l.due_date FROM loans l JOIN book_items bi ON l.book_barcode = bi.barcode
-                    JOIN books b ON bi.isbn = b.isbn WHERE l.member_id = ? AND l.return_date IS NULL"""
-        books = db.fetch_query(query, (member_id,))
-        db.close()
-
+        books = LoanRepository.get_borrowed_books_by_member(member_id)
         if not books:
             print(f"No books currently checked out for member {member_id}")
             return
@@ -193,16 +111,7 @@ class LibrarianService:
 
     @staticmethod
     def get_all_borrowed_books():
-        db = DatabaseManager()
-
-        query = """SELECT m.name, m.member_id, b.title, l.book_barcode, l.due_date FROM loans l
-                    JOIN members m ON l.member_id = m.member_id 
-                    JOIN book_items bi ON l.book_barcode = bi.barcode
-                    JOIN books b ON bi.isbn = b.isbn WHERE l.return_date IS NULL ORDER BY l.due_date ASC"""
-
-        books = db.fetch_query(query)
-        db.close()
-
+        books = LoanRepository.get_all_active_loans()
         if not books:
             print(f"No books currently checked out")
             return
@@ -215,21 +124,14 @@ class LibrarianService:
 
     @staticmethod
     def cancel_membership(member_id):
-        db = DatabaseManager()
-
-        member = db.fetch_query("SELECT checkout_count FROM members WHERE member_id = ?", (member_id,))
+        member = MemberRepository.get_member(member_id)
         if not member:
             print("Error: Member not found.")
-            db.close()
             return
 
-        if member[0][0] > 0:
+        if member[0][3] > 0:    # fixed this line as it checked for name not for check out count
             print("Error: We can not cancel this membership now as this member has books checked out currently")
-            db.close()
             return
 
-        db.execute_query("DELETE FROM members WHERE member_id = ?", (member_id,))
-        db.close()
+        MemberRepository.delete_member(member_id)
         print(f"Success: Membership cancelled for {member_id}.")
-
-
