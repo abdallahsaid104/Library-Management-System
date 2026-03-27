@@ -1,5 +1,5 @@
 from database import DatabaseManager
-from services.notification_service import NotificationService
+from services.notification_service import NotificationService, EmailNotification
 from person import Member
 from datetime import datetime
 
@@ -129,4 +129,8 @@ class MemberService:
             (member.id, isbn)
         )
         db.close()
+
+        notifier = EmailNotification()
+        notifier.send(member, f"Your reservation for book (ISBN: {isbn}) has been successfully cancelled.")
+
         print(f"Success: Reservation for this book {isbn} is cancelled")
