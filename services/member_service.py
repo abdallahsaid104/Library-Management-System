@@ -10,14 +10,14 @@ class MemberService:
     def checkout_book(member, barcode):
         if not member.can_checkout():
             print(f"ERROR: {member.name} has reached the maximum limit {member.MaxBooksLimit}")
-            return False
+            return
 
         db = DatabaseManager()
         item = db.fetch_query("SELECT * FROM book_items WHERE barcode = ? AND status = 'available'", (barcode,))
         if not item:
             print(f"ERROR: Book item {barcode} is not available.")
             db.close()
-            return False
+            return
 
         due_date = member.get_due_date()
         today = datetime.now().date()
@@ -33,8 +33,6 @@ class MemberService:
         member.checkout_count += 1
         print(f"Success: book {barcode} checked out to {member.name} due to {due_date}")
 
-        return True
-
     @staticmethod
     def return_book(member, barcode):
         db = DatabaseManager()
@@ -43,7 +41,7 @@ class MemberService:
         if not loan:
             print(f"ERROR: No active loan found for book {barcode}")
             db.close()
-            return False
+            return
 
         loan_id = loan[0][0]
         due_date = datetime.strptime(loan[0][1], "%Y-%m-%d").date()
@@ -60,7 +58,6 @@ class MemberService:
         db.close()
         member.checkout_count -= 1
         print(f"Success: Book returned.")
-        return True
 
     @staticmethod
     def reserve_book(member, isbn):
@@ -77,3 +74,35 @@ class MemberService:
         print(f"Success: Reserved '{book[0][0]}'.")
         db.close()
 
+    @staticmethod
+    def renew_book(member, barcode):
+        db = DatabaseManager()
+
+        loan = db.fetch_query(
+            "SELECT loan_id, due_date FROM loans WHERE book_barcode = ? AND member_id = ? AND return_date IS NULL",
+            (barcode, member.id)
+        )
+
+        if not loan:
+            print("No active loan found for this member.")
+            db.close()
+            return
+
+        loan_id = loan[0][0]
+
+        # Check if someone reserved it (No allow if it reserved)
+        info = db.fetch_query("SELECT isbn FROM book_items WHERE barcode = ?", (barcode,))
+        if info:
+            isbn = info[0][0]
+            reservation = db.fetch_query("SELECT * FROM reservations WHERE isbn = ? AND status = 'waiting' LIMIT 1", (isbn,))
+            if reservation:
+                print(f"ERROR: This book {isbn} is reserved by another member.")
+                db.close()
+                return
+
+        new_due_date = member.get_due_date()
+
+        db.execute_query("UPDATE loans SET due_date = ? WHERE loan_id = ?", (str(new_due_date), loan_id))
+        db.close()
+
+        print(f"Success: Book renewed New due date: {new_due_date}")

@@ -1,4 +1,6 @@
 from person import Member
+from database import DatabaseManager
+from datetime import datetime
 
 
 class Notification:
@@ -40,3 +42,32 @@ class NotificationService:
 
                 db.execute_query("UPDATE reservations SET status = 'notified' WHERE member_id = ? AND isbn = ?",
                                  (member.id, isbn))
+
+    @staticmethod
+    def check_overdue():
+        db = DatabaseManager()
+        today = datetime.now().date()
+
+        query = """ SELECT l.member_id, l.book_barcode, l.due_date, b.title FROM loans l
+                    JOIN book_items bi ON l.book_barcode = bi.barcode
+                    JOIN books b ON bi.isbn = b.isbn WHERE l.return_date IS NULL AND l.due_date < ?
+                """
+        loans = db.fetch_query(query, (str(today),))
+        db.close()
+
+        if not loans:
+            print("No overdue books found")
+            return
+
+        print(f"There is {le(loans)} overdue books")
+
+        for loan in loans:
+            member_id, barcode, due_date, title = loan
+            member = Member.get_member(member_id)
+
+            if member:
+                due_date = datetime.strptime(due_date, "%Y-%m-%d").date()
+
+                notifier = EmailNotification()
+                notifier.send(member, f"OVERDUE ALERT: '{title}' was due on {due_date}")
+
