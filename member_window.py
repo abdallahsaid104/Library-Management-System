@@ -4,6 +4,7 @@ import sys
 from PyQt5 import uic
 from PyQt5.QtWidgets import QMainWindow, QTableWidgetItem
 from PyQt5.QtCore import Qt
+from database import DatabaseManager
 from services.member_service import MemberService
 from repositories.loan_repository import LoanRepository
 from book import Book
@@ -232,7 +233,10 @@ class MemberWindow(QMainWindow):
         self._show_msg(msg, success="Success" in msg)
 
     def _load_my_books(self):
-        books = LoanRepository.get_borrowed_books_by_member(self.member.id)
+        with DatabaseManager() as db:
+            repo = LoanRepository(db)
+            books = repo.get_borrowed_books_by_member(self.member.id)
+
         self.tableWidget_results.setRowCount(0)
         if not books:
             self._show_msg("You have no books currently checked out.", success=False)

@@ -4,9 +4,9 @@ from person import Member
 from repositories.member_repository import MemberRepository
 from repositories.book_repository import BookRepository
 from repositories.loan_repository import LoanRepository
+from database import DatabaseManager
 
 
-# FIX: Notification is now a proper abstract base class using ABC
 class Notification(ABC):
     @abstractmethod
     def send(self, member, message):
@@ -32,31 +32,47 @@ class NotificationService:
 
     @staticmethod
     def notify_reserved_members(barcode):
-        item = BookRepository.get_book_item(barcode)
-        if not item:
-            return
-        isbn = item[0][1]
-        reservation = MemberRepository.get_waiting_reservation(isbn)
-        if reservation:
-            member_id = reservation[0][0]
-            member = Member.get_member(member_id)
-            if member:
-                notifier = EmailNotification()
-                notifier.send(member, f"The book {isbn} you reserved is now available")
-                MemberRepository.update_reservation_status(member.id, isbn, 'notified')
+        with DatabaseManager() as db:
+            book_repo = BookRepository(db)
+            member_repo = MemberRepository(db)
+
+            item = book_repo.get_book_item(barcode)
+            if not item:
+                return
+
+            isbn = item[0][1]
+            reservation = member_repo.get_waiting_reservation(isbn)
+
+            if reservation:
+                member_id = reservation[0][0]
+                member_data = member_repo.get_member(member_id)
+                if member_data:
+                    member = Member(*member_data[0])
+                    notifier = EmailNotification()
+                    notifier.send(member, f"The book {isbn} you reserved is now available")
+                    member_repo.update_reservation_status(member.id, isbn, 'notified')
 
     @staticmethod
     def check_overdue():
-        today = datetime.now().date()
-        loans = LoanRepository.get_overdue_loans(today)
-        if not loans:
-            print("No overdue books found")
-            return
-        print(f"There is {len(loans)} overdue books")
-        for loan in loans:
-            member_id, barcode, due_date_str, title = loan
-            member = Member.get_member(member_id)
-            if member:
-                due_date = datetime.strptime(due_date_str, "%Y-%m-%d").date()
-                notifier = EmailNotification()
-                notifier.send(member, f"OVERDUE ALERT: '{title}' was due on {due_date}")
+        with DatabaseManager() as db:
+            loan_repo = LoanRepository(db)
+            member_repo = MemberRepository(db)
+
+            today = datetime.now().date()
+            loans = loan_repo.get_overdue_loans(today)
+
+            if not loans:
+                print("No overdue books found")
+                return False
+
+            print(f"There is {len(loans)} overdue books")
+            for loan in loans:
+                member_id, barcode, due_date_str, title = loan
+                member_data = member_repo.get_member(member_id)
+                if member_data:
+                    member = Member(member_data[0][0], member_data[0][1], member_data[0][2], member_data[0][3],
+                                    member_data[0][4])
+                    due_date = datetime.strptime(due_date_str, "%Y-%m-%d").date()
+                    notifier = EmailNotification()
+                    notifier.send(member, f"OVERDUE ALERT: '{title}' was due on {due_date}")
+        return True

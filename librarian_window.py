@@ -4,6 +4,7 @@ import sys
 from PyQt5 import uic
 from PyQt5.QtWidgets import QMainWindow, QTableWidgetItem
 from PyQt5.QtCore import Qt
+from database import DatabaseManager
 from services.librarian_service import LibrarianService
 from services.notification_service import NotificationService
 from repositories.loan_repository import LoanRepository
@@ -197,66 +198,88 @@ class LibrarianWindow(QMainWindow):
         self.label_result_msg.setText(msg)
 
     def _handle_action(self):
-        if self.current_page == "add_book":
-            msg = self._capture(LibrarianService.add_new_book,
-                self.lineEdit_isbn.text().strip(), self.lineEdit_title.text().strip(),
-                self.lineEdit_author.text().strip(), self.lineEdit_subject.text().strip(),
-                self.lineEdit_pub_date.text().strip())
-            self._show_msg(msg, success="Success" in msg)
-
-        elif self.current_page == "add_copy":
-            msg = self._capture(LibrarianService.add_book_item,
-                self.lineEdit_title.text().strip(),
-                self.lineEdit_isbn.text().strip(),
-                self.lineEdit_author.text().strip())
-            self._show_msg(msg, success="Success" in msg)
-
-        elif self.current_page == "register_member":
-            password = self.lineEdit_subject.text().strip() or "1234"
-            msg = self._capture(LibrarianService.register_member,
-                self.lineEdit_title.text().strip(),
-                self.lineEdit_isbn.text().strip(),
-                self.lineEdit_author.text().strip(), password)
-            self._show_msg(msg, success="Success" in msg)
-
-        elif self.current_page == "cancel_membership":
-            msg = self._capture(LibrarianService.cancel_membership,
-                self.lineEdit_isbn.text().strip())
-            self._show_msg(msg, success="Success" in msg)
-
-        elif self.current_page == "find_borrower":
-            msg = self._capture(LibrarianService.get_book_borrower,
-                self.lineEdit_isbn.text().strip())
-            self._show_msg(msg, success="currently borrowed" in msg)
-
-        elif self.current_page == "register_librarian":
-            msg = self._capture(LibrarianService.register_librarian,
-                self.lineEdit_title.text().strip(),
-                self.lineEdit_isbn.text().strip(),
-                self.lineEdit_author.text().strip(),
-                self.lineEdit_subject.text().strip())
-            self._show_msg(msg, success="Success" in msg)
-
-        elif self.current_page == "overdue":
-            msg = self._capture(NotificationService.check_overdue)
-            self._show_msg(msg, success="No overdue" in msg)
+        action_map = {
+            "add_book": self._do_add_book,
+            "add_copy": self._do_add_copy,
+            "register_member": self._do_register_member,
+            "cancel_membership": self._do_cancel_membership,
+            "find_borrower": self._do_find_borrower,
+            "register_librarian": self._do_register_librarian,
+            "overdue": self._do_overdue
+        }
+        if self.current_page in action_map:
+            action_map[self.current_page]()
 
     def _handle_secondary(self):
-        if self.current_page == "add_book":
-            msg = self._capture(LibrarianService.edit_book,
-                self.lineEdit_isbn.text().strip(),
-                self.lineEdit_title.text().strip() or None,
-                self.lineEdit_author.text().strip() or None,
-                self.lineEdit_subject.text().strip() or None)
-            self._show_msg(msg, success="Success" in msg)
+        secondary_map = {
+            "add_book": self._do_edit_book,
+            "add_copy": self._do_remove_copy
+        }
+        if self.current_page in secondary_map:
+            secondary_map[self.current_page]()
 
-        elif self.current_page == "add_copy":
-            msg = self._capture(LibrarianService.remove_book_item,
-                self.lineEdit_title.text().strip())
-            self._show_msg(msg, success="Success" in msg)
+    def _do_add_book(self):
+        msg = self._capture(LibrarianService.add_new_book,
+                            self.lineEdit_isbn.text().strip(), self.lineEdit_title.text().strip(),
+                            self.lineEdit_author.text().strip(), self.lineEdit_subject.text().strip(),
+                            self.lineEdit_pub_date.text().strip())
+        self._show_msg(msg, success="Success" in msg)
+
+    def _do_edit_book(self):
+        msg = self._capture(LibrarianService.edit_book,
+                            self.lineEdit_isbn.text().strip(),
+                            self.lineEdit_title.text().strip() or None,
+                            self.lineEdit_author.text().strip() or None,
+                            self.lineEdit_subject.text().strip() or None)
+        self._show_msg(msg, success="Success" in msg)
+
+    def _do_add_copy(self):
+        msg = self._capture(LibrarianService.add_book_item,
+                            self.lineEdit_title.text().strip(),
+                            self.lineEdit_isbn.text().strip(),
+                            self.lineEdit_author.text().strip())
+        self._show_msg(msg, success="Success" in msg)
+
+    def _do_remove_copy(self):
+        msg = self._capture(LibrarianService.remove_book_item,
+                            self.lineEdit_title.text().strip())
+        self._show_msg(msg, success="Success" in msg)
+
+    def _do_register_member(self):
+        password = self.lineEdit_subject.text().strip() or "1234"
+        msg = self._capture(LibrarianService.register_member,
+                            self.lineEdit_title.text().strip(),
+                            self.lineEdit_isbn.text().strip(),
+                            self.lineEdit_author.text().strip(), password)
+        self._show_msg(msg, success="Success" in msg)
+
+    def _do_cancel_membership(self):
+        msg = self._capture(LibrarianService.cancel_membership,
+                            self.lineEdit_isbn.text().strip())
+        self._show_msg(msg, success="Success" in msg)
+
+    def _do_find_borrower(self):
+        msg = self._capture(LibrarianService.get_book_borrower,
+                            self.lineEdit_isbn.text().strip())
+        self._show_msg(msg, success="currently borrowed" in msg)
+
+    def _do_register_librarian(self):
+        msg = self._capture(LibrarianService.register_librarian,
+                            self.lineEdit_title.text().strip(),
+                            self.lineEdit_isbn.text().strip(),
+                            self.lineEdit_author.text().strip(),
+                            self.lineEdit_subject.text().strip())
+        self._show_msg(msg, success="Success" in msg)
+
+    def _do_overdue(self):
+        msg = self._capture(NotificationService.check_overdue)
+        self._show_msg(msg, success="No overdue" in msg)
 
     def _load_all_loans(self):
-        loans = LoanRepository.get_all_active_loans()
+        with DatabaseManager() as db:
+            repo = LoanRepository(db)
+            loans = repo.get_all_active_loans()
+
         self.tableWidget_results.setRowCount(0)
         if not loans:
             self._show_msg("No books currently checked out.", success=False)

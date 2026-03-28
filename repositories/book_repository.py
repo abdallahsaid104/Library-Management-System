@@ -1,114 +1,80 @@
-from database import DatabaseManager
 
 
 class BookRepository:
 
-    @staticmethod
-    def search_books(search_term, search_type):
-        db = DatabaseManager()
-        query = f"SELECT * FROM books WHERE {search_type} LIKE ?"
-        param = f"%{search_term}%"
-        books = db.fetch_query(query, (param,))
-        db.close()
-        return books
+    def __init__(self, db):
+        self.db = db
 
-    @staticmethod
-    def get_book_item(barcode):
-        db = DatabaseManager()
-        item = db.fetch_query("SELECT * FROM book_items WHERE barcode = ?", (barcode,))
-        db.close()
-        return item
+    def search_books(self, search_term, search_type):
+        allowed_types = {"title", "author", "subject", "publication_date"}
+        if search_type not in allowed_types:
+            raise ValueError(f"Invalid search type: {search_type}")
+        return self.db.fetch_query(f"SELECT * FROM books WHERE {search_type} LIKE ?", (f"%{search_term}%",))
 
-    @staticmethod
-    def update_item_status(barcode, status):
-        db = DatabaseManager()
-        db.execute_query("UPDATE book_items SET status = ? WHERE barcode = ?", (status, barcode))
-        db.close()
+    def get_book_item(self, barcode):
+        return self.db.fetch_query("SELECT * FROM book_items WHERE barcode = ?", (barcode,))
 
-    @staticmethod
-    def get_book_by_isbn(isbn):
-        db = DatabaseManager()
-        result = db.fetch_query("SELECT * FROM books WHERE isbn = ?", (isbn,))
-        db.close()
-        return result
+    def update_item_status(self, barcode, status):
+        self.db.execute_query("UPDATE book_items SET status = ? WHERE barcode = ?", (status, barcode))
 
-    # FIX: new method to get all physical copies (book_items) for a given ISBN
-    @staticmethod
-    def get_items_by_isbn(isbn):
-        db = DatabaseManager()
-        result = db.fetch_query("SELECT * FROM book_items WHERE isbn = ?", (isbn,))
-        db.close()
-        return result
+    def get_book_by_isbn(self, isbn):
+        return self.db.fetch_query("SELECT * FROM books WHERE isbn = ?", (isbn,))
 
-    @staticmethod
-    def add_book(isbn, title, author, subject, pub_date):
-        db = DatabaseManager()
-        db.execute_query(
-            "INSERT INTO books VALUES (?, ?, ?, ?, ?)",
-            (isbn, title, author, subject, pub_date)
-        )
-        db.close()
+    def get_items_by_isbn(self, isbn):
+        return self.db.fetch_query("SELECT * FROM book_items WHERE isbn = ?", (isbn,))
 
-    @staticmethod
-    def update_book(isbn, title=None, author=None, subject=None):
-        db = DatabaseManager()
+    def add_book(self, isbn, title, author, subject, pub_date):
+        self.db.execute_query("INSERT INTO books VALUES (?, ?, ?, ?, ?)", (isbn, title, author, subject, pub_date))
+
+    def update_book(self, isbn, title=None, author=None, subject=None):
         updates = []
         params = []
-        if title:
-            updates.append("title = ?")
-            params.append(title)
-        if author:
-            updates.append("author = ?")
-            params.append(author)
-        if subject:
-            updates.append("subject = ?")
-            params.append(subject)
-        if updates:
-            query = f"UPDATE books SET {', '.join(updates)} WHERE isbn = ?"
-            params.append(isbn)
-            db.execute_query(query, tuple(params))
-        db.close()
+        fields_to_update = {
+            "title": title,
+            "author": author,
+            "subject": subject
+        }
+        for field_type, value in fields_to_update.items():
+            if value is not None:
+                updates.append(f"{field_type} = ?")
+                params.append(value)
 
-    @staticmethod
-    def remove_book(isbn):
-        db = DatabaseManager()
-        db.execute_query("DELETE FROM books WHERE isbn = ?", (isbn,))
-        db.close()
+        if not updates:
+            raise ValueError("No fields provided to update")
 
-    @staticmethod
-    def add_book_item(barcode, isbn, rack):
-        db = DatabaseManager()
-        db.execute_query(
+        params.append(isbn)
+        self.db.execute_query(f"UPDATE books SET {', '.join(updates)} WHERE isbn = ?", tuple(params))
+
+    def remove_book(self, isbn):
+        self.db.execute_query("DELETE FROM books WHERE isbn = ?", (isbn,))
+
+    def add_book_item(self, barcode, isbn, rack):
+        self.db.execute_query(
             "INSERT INTO book_items (barcode, isbn, rack_number, status) VALUES (?, ?, ?, 'available')",
             (barcode, isbn, rack)
         )
-        db.close()
 
-    @staticmethod
-    def remove_book_item(barcode):
-        db = DatabaseManager()
-        db.execute_query("DELETE FROM book_items WHERE barcode = ?", (barcode,))
-        db.close()
+    def remove_book_item(self, barcode):
+        self.db.execute_query("DELETE FROM book_items WHERE barcode = ?", (barcode,))
 
-    @staticmethod
-    def remove_items_by_isbn(isbn):
-        db = DatabaseManager()
-        db.execute_query("DELETE FROM book_items WHERE isbn = ?", (isbn,))
-        db.close()
+    def remove_items_by_isbn(self, isbn):
+        self.db.execute_query("DELETE FROM book_items WHERE isbn = ?", (isbn,))
 
-    @staticmethod
-    def update_book_item(barcode, rack=None, status=None):
-        db = DatabaseManager()
+    def update_book_item(self, barcode, rack=None, status=None):
         updates = []
         params = []
-        if rack:
-            updates.append("rack_number = ?")
-            params.append(rack)
-        if status:
-            updates.append("status = ?")
-            params.append(status)
-        if updates:
-            query = f"UPDATE book_items SET {', '.join(updates)} WHERE barcode = ?"
-            params.append(barcode)
-            db.execute_query(query, tuple(params))
-        db.close()
+        fields_to_update = {
+            "rack": rack,
+            "status": status
+        }
+
+        for field_type, value in fields_to_update.items():
+            if value is not None:
+                updates.append(f"{field_type} = ?")
+                params.append(value)
+
+        if not updates:
+            raise ValueError("No fields provided to update")
+
+        params.append(barcode)
+        self.db.execute_query(f"UPDATE book_items SET {', '.join(updates)} WHERE barcode = ?", tuple(params))

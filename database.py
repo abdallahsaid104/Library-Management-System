@@ -7,6 +7,12 @@ class DatabaseManager:
         self.cursor = self.connect.cursor()
         self.create_table()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     def create_table(self):
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS books (isbn TEXT PRIMARY KEY, title TEXT NOT NULL,
                 author TEXT NOT NULL, subject TEXT, publication_date TEXT)""")

@@ -1,26 +1,15 @@
-from database import DatabaseManager
-
-
 class LibrarianRepository:
 
-    @staticmethod
-    def get_librarian(librarian_id):
-        db = DatabaseManager()
-        result = db.fetch_query("SELECT * FROM librarians WHERE librarian_id = ?", (librarian_id,))
-        db.close()
-        return result
+    def __init__(self, db):
+        self.db = db
 
-    @staticmethod
-    def add_librarian(name, librarian_id, email, password):
-        db = DatabaseManager()
-        db.execute_query(
-            "INSERT INTO librarians (name, librarian_id, email, password) VALUES (?, ?, ?, ?)",
-            (name, librarian_id, email, password)
-        )
-        db.close()
+    def get_librarian(self, librarian_id):
+        return self.db.fetch_query("SELECT * FROM librarians WHERE librarian_id = ?", (librarian_id,))
 
-    @staticmethod
-    def delete_librarian(librarian_id):
-        db = DatabaseManager()
-        db.execute_query("DELETE FROM librarians WHERE librarian_id = ?", (librarian_id,))
-        db.close()
+    def add_librarian(self, name, librarian_id, email, password):
+        self.db.execute_query("INSERT INTO librarians (name, librarian_id, email, password) VALUES (?, ?, ?, ?)",
+                              (name, librarian_id, email, password)
+                              )
+
+    def delete_librarian(self, librarian_id):
+        self.db.execute_query("DELETE FROM librarians WHERE librarian_id = ?", (librarian_id,))

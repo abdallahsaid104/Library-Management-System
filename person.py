@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from database import DatabaseManager
 from repositories.member_repository import MemberRepository
 from repositories.librarian_repository import LibrarianRepository
 
@@ -10,11 +11,7 @@ class Person:
         self.email = email
 
     def __str__(self):
-        info = f"""
-Name: {self.name}
-ID:   {self.id}
-Email:{self.email}"""
-        return info
+        return f"Name: {self.name}\nID:   {self.id}\nEmail:{self.email}"
 
 
 class Member(Person):
@@ -26,6 +23,10 @@ class Member(Person):
         super().__init__(name, member_id, email)
         self.checkout_count = checkout_count
         self.password = password
+
+    def __str__(self):
+        base_info = super().__str__()
+        return f"{base_info}\nRole: Member\nChecked Out: {self.checkout_count}/{self.MaxBooksLimit}"
 
     def check_password(self, input_password):
         return self.password == input_password
@@ -48,9 +49,11 @@ class Member(Person):
 
     @staticmethod
     def get_member(member_id):
-        member = MemberRepository.get_member(member_id)
-        if member:
-            return Member(member[0][0], member[0][1], member[0][2], member[0][3], member[0][4])
+        with DatabaseManager() as db:
+            repo = MemberRepository(db)
+            member_data = repo.get_member(member_id)
+            if member_data:
+                return Member(*member_data[0])
         return None
 
 
@@ -59,12 +62,18 @@ class Librarian(Person):
         super().__init__(name, librarian_id, email)
         self.password = password
 
+    def __str__(self):
+        base_info = super().__str__()
+        return f"{base_info}\nRole: Librarian"
+
     def check_password(self, input_password):
         return self.password == input_password
 
     @staticmethod
     def get_librarian(librarian_id):
-        librarian = LibrarianRepository.get_librarian(librarian_id)
-        if librarian:
-            return Librarian(librarian[0][0], librarian[0][1], librarian[0][2], librarian[0][3])
+        with DatabaseManager() as db:
+            repo = LibrarianRepository(db)
+            librarian_data = repo.get_librarian(librarian_id)
+            if librarian_data:
+                return Librarian(*librarian_data[0])
         return None
