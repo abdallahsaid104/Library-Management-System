@@ -1,8 +1,9 @@
 from database import DatabaseManager
 from datetime import datetime, timedelta
+from abc import ABC
 
 
-class Person:
+class Person(ABC):
     def __init__(self, name, person_id, email):
         self.name = name
         self.id = person_id

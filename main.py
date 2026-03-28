@@ -80,8 +80,13 @@ def member_menu():
         choice = input("Enter choice: ")
 
         if choice == '1':
+            # FIX: ask user which field to search by
+            print("Search by: 1-Title  2-Author  3-Subject  4-Publication Date")
+            type_choice = input("Enter search type (1-4): ")
+            type_map = {'1': 'title', '2': 'author', '3': 'subject', '4': 'date'}
+            search_type = type_map.get(type_choice, 'title')
             term = input("Enter search term: ")
-            results = Book.search_books(term)
+            results = Book.search_books(term, search_type)
             if results:
                 for b in results:
                     print(f"- {b.title} by {b.author} (ISBN: {b.isbn})")

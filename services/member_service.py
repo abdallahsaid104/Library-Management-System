@@ -1,12 +1,9 @@
-from person import Member
-from datetime import datetime
 from datetime import datetime
 from person import Member
-from services.notification_service import EmailNotification
+from services.notification_service import EmailNotification, NotificationService
 from repositories.member_repository import MemberRepository
 from repositories.book_repository import BookRepository
 from repositories.loan_repository import LoanRepository
-from services.notification_service import NotificationService
 
 
 class MemberService:
@@ -80,9 +77,7 @@ class MemberService:
                 return
 
         new_due_date = member.get_due_date()
-
         LoanRepository.update_loan_due_date(loan_id, new_due_date)
-
         print(f"Success: Book renewed New due date: {new_due_date}")
 
     @staticmethod

@@ -83,5 +83,3 @@ class DatabaseManager:
 
     def close(self):
         self.connect.close()
-
-

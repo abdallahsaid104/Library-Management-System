@@ -61,4 +61,3 @@ class BookItem:
         for row in results:
             items.append(BookItem(row[0], row[1], row[2], row[3]))
         return items
-

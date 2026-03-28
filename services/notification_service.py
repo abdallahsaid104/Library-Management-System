@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from datetime import datetime
 from person import Member
 from repositories.member_repository import MemberRepository
@@ -5,9 +6,11 @@ from repositories.book_repository import BookRepository
 from repositories.loan_repository import LoanRepository
 
 
-class Notification:
+# FIX: Notification is now a proper abstract base class using ABC
+class Notification(ABC):
+    @abstractmethod
     def send(self, member, message):
-        raise NotImplementedError("Subclass must implement this method")
+        pass
 
 
 class EmailNotification(Notification):
@@ -26,18 +29,17 @@ class SMSNotification(Notification):
 
 
 class NotificationService:
+
     @staticmethod
     def notify_reserved_members(barcode):
         item = BookRepository.get_book_item(barcode)
         if not item:
             return
-
         isbn = item[0][1]
         reservation = MemberRepository.get_waiting_reservation(isbn)
         if reservation:
             member_id = reservation[0][0]
             member = Member.get_member(member_id)
-
             if member:
                 notifier = EmailNotification()
                 notifier.send(member, f"The book {isbn} you reserved is now available")
@@ -47,17 +49,13 @@ class NotificationService:
     def check_overdue():
         today = datetime.now().date()
         loans = LoanRepository.get_overdue_loans(today)
-
         if not loans:
             print("No overdue books found")
             return
-
         print(f"There is {len(loans)} overdue books")
-
         for loan in loans:
             member_id, barcode, due_date_str, title = loan
             member = Member.get_member(member_id)
-
             if member:
                 due_date = datetime.strptime(due_date_str, "%Y-%m-%d").date()
                 notifier = EmailNotification()

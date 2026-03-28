@@ -32,6 +32,14 @@ class BookRepository:
         db.close()
         return result
 
+    # FIX: new method to get all physical copies (book_items) for a given ISBN
+    @staticmethod
+    def get_items_by_isbn(isbn):
+        db = DatabaseManager()
+        result = db.fetch_query("SELECT * FROM book_items WHERE isbn = ?", (isbn,))
+        db.close()
+        return result
+
     @staticmethod
     def add_book(isbn, title, author, subject, pub_date):
         db = DatabaseManager()
@@ -55,7 +63,6 @@ class BookRepository:
         if subject:
             updates.append("subject = ?")
             params.append(subject)
-
         if updates:
             query = f"UPDATE books SET {', '.join(updates)} WHERE isbn = ?"
             params.append(isbn)
@@ -100,7 +107,6 @@ class BookRepository:
         if status:
             updates.append("status = ?")
             params.append(status)
-
         if updates:
             query = f"UPDATE book_items SET {', '.join(updates)} WHERE barcode = ?"
             params.append(barcode)

@@ -52,7 +52,8 @@ class LibrarianService:
 
     @staticmethod
     def remove_book(isbn):
-        items = BookRepository.get_book_by_isbn(isbn)
+        # FIX: use get_items_by_isbn to get actual copies, not the book record
+        items = BookRepository.get_items_by_isbn(isbn)
         loan = LoanRepository.get_active_loan_for_isbn(isbn)
         if loan:
             print(f"Error: we can not remove this book as there are {len(items)} copies currently checked out")
@@ -61,7 +62,6 @@ class LibrarianService:
 
         BookRepository.remove_items_by_isbn(isbn)
         BookRepository.remove_book(isbn)
-
         print(f"Success: Book {isbn} and its items have been removed from the system")
 
     @staticmethod
@@ -129,7 +129,7 @@ class LibrarianService:
             print("Error: Member not found.")
             return
 
-        if member[0][3] > 0:    # fixed this line as it checked for name not for check out count
+        if member[0][3] > 0:
             print("Error: We can not cancel this membership now as this member has books checked out currently")
             return
 
