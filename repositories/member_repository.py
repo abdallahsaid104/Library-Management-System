@@ -60,11 +60,11 @@ class MemberRepository:
         db.close()
 
     @staticmethod
-    def add_member(name, member_id, email):
+    def add_member(name, member_id, email, password="1234"):
         db = DatabaseManager()
         db.execute_query(
-            "INSERT INTO members (name, member_id, email, checkout_count) VALUES (?, ?, ?, 0)",
-            (name, member_id, email)
+            "INSERT INTO members (name, member_id, email, checkout_count, password) VALUES (?, ?, ?, 0, ?)",
+            (name, member_id, email, password)
         )
         db.close()
 

@@ -15,10 +15,10 @@ class DatabaseManager:
                 rack_number TEXT, status TEXT DEFAULT 'available', FOREIGN KEY (isbn) REFERENCES books (isbn))""")
 
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS members (name TEXT NOT NULL, member_id TEXT PRIMARY KEY,
-                        email TEXT, checkout_count INTEGER DEFAULT 0)""")
+                        email TEXT, checkout_count INTEGER DEFAULT 0, password TEXT)""")
 
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS loans (loan_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                member_id TEXT, book_barcode TEXT, issue_date TEXT, due_date TEXT, return_date TEXT, 
+                member_id TEXT, book_barcode TEXT, issue_date TEXT, due_date TEXT, return_date TEXT,
                 fine_amount REAL DEFAULT 0.0, FOREIGN KEY (member_id) REFERENCES members (member_id),
                 FOREIGN KEY (book_barcode) REFERENCES book_items (barcode))""")
 
@@ -26,6 +26,9 @@ class DatabaseManager:
                         member_id TEXT, isbn TEXT, reservation_date TEXT, status TEXT DEFAULT 'waiting',
                         FOREIGN KEY (member_id) REFERENCES members (member_id), FOREIGN KEY (isbn) REFERENCES books (isbn)
                         )""")
+
+        self.cursor.execute("""CREATE TABLE IF NOT EXISTS librarians (name TEXT NOT NULL,
+                        librarian_id TEXT PRIMARY KEY, email TEXT, password TEXT)""")
 
         self.connect.commit()
 
@@ -59,26 +62,30 @@ class DatabaseManager:
 
         items = [
             ("B0001", "9780141439518", "A1", "available"),
-            ("B0002", "9780141439518", "A1", "available"),
+            ("B0002", "9780141439518", "A2", "available"),
             ("B0003", "9780735211292", "B1", "available"),
-            ("B0004", "9780735211292", "B1", "available"),
+            ("B0004", "9780735211292", "B2", "available"),
             ("B0005", "9780743273565", "C1", "available"),
-            ("B0006", "9780743273565", "C1", "available"),
+            ("B0006", "9780743273565", "C2", "available"),
             ("B0007", "9780132350884", "D1", "available"),
-            ("B0008", "9780132350884", "D1", "available"),
+            ("B0008", "9780132350884", "D2", "available"),
             ("B0009", "9781612680194", "E1", "available"),
-            ("B0010", "9781612680194", "E1", "available")
+            ("B0010", "9781612680194", "E2", "available")
         ]
         self.cursor.executemany("INSERT INTO book_items VALUES (?, ?, ?, ?)", items)
 
         members = [
-            ("Abdallah said", "ID-MEM-001", "abdallah@gmail.com", 0),
-            ("Eman said", "ID-MEM-002", "Eman@gmail.com", 0)
+            ("Abdallah said", "MEM-001", "abdallah@gmail.com", 0, "1234"),
+            ("Eman said",     "MEM-002", "Eman@gmail.com",     0, "4321")
         ]
-        self.cursor.executemany("INSERT INTO members VALUES (?, ?, ?, ?)", members)
+        self.cursor.executemany("INSERT INTO members VALUES (?, ?, ?, ?, ?)", members)
+
+        librarians = [
+            ("Admin Librarian", "LIB-001", "admin@library.com", "admin123")
+        ]
+        self.cursor.executemany("INSERT INTO librarians VALUES (?, ?, ?, ?)", librarians)
 
         self.connect.commit()
-
         print("Library database initialized with dummy data")
 
     def close(self):
