@@ -75,9 +75,10 @@ class LibrarianService:
         member = MemberRepository.get_member(member_id)
         if member:
             print(f"Error: Member {member_id} already exists")
-            return
+            return False
         MemberRepository.add_member(name, member_id, email, password)
         print(f"Success: Member '{name}' registered with default password: {password}")
+        return True
 
     @staticmethod
     def register_librarian(name, librarian_id, email, password):
