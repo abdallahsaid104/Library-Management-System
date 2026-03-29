@@ -6,6 +6,11 @@ QDialog, QMainWindow, QWidget {
     font-size: 13px;
 }
 
+QScrollArea {
+    background-color: #141824;
+    border: none;
+}
+
 QLabel {
     color: #cccccc;
     font-size: 13px;

@@ -5,6 +5,7 @@ from PyQt5 import uic
 from PyQt5.QtWidgets import QMainWindow, QTableWidgetItem
 from PyQt5.QtCore import Qt
 from services.librarian_service import LibrarianService
+from services.member_service import MemberService
 from services.notification_service import NotificationService
 from styles import (MAIN_STYLE, BUTTON_PRIMARY, LABEL_TITLE, LABEL_ERROR,
                     LABEL_SUCCESS, LABEL_SECTION, LABEL_AVATAR,
@@ -37,6 +38,7 @@ class LibrarianWindow(QMainWindow):
         self.label_section_catalog.setStyleSheet(LABEL_SECTION)
         self.label_section_members.setStyleSheet(LABEL_SECTION)
         self.label_section_loans.setStyleSheet(LABEL_SECTION)
+        self.label_section_my_account.setStyleSheet(LABEL_SECTION)
         self.label_section_admin.setStyleSheet(LABEL_SECTION)
         self.label_result_msg.setStyleSheet(LABEL_ERROR)
         self.button_action.setStyleSheet(BUTTON_PRIMARY)
@@ -56,6 +58,9 @@ class LibrarianWindow(QMainWindow):
             self.button_add_book, self.button_add_copy,
             self.button_register_member, self.button_cancel_membership,
             self.button_all_loans, self.button_find_borrower,
+            self.button_search, self.button_my_checkout, self.button_my_return,
+            self.button_my_renew, self.button_my_reserve, self.button_my_cancel_res,
+            self.button_my_books,
             self.button_register_librarian, self.button_overdue
         ]
         self.button_add_book.clicked.connect(self._show_add_book)
@@ -64,6 +69,15 @@ class LibrarianWindow(QMainWindow):
         self.button_cancel_membership.clicked.connect(self._show_cancel_membership)
         self.button_all_loans.clicked.connect(self._show_all_loans)
         self.button_find_borrower.clicked.connect(self._show_find_borrower)
+
+        self.button_search.clicked.connect(self._show_search)
+        self.button_my_checkout.clicked.connect(self._show_checkout)
+        self.button_my_return.clicked.connect(self._show_return)
+        self.button_my_renew.clicked.connect(self._show_renew)
+        self.button_my_reserve.clicked.connect(self._show_reserve)
+        self.button_my_cancel_res.clicked.connect(self._show_cancel_reservation)
+        self.button_my_books.clicked.connect(self._show_my_books)
+
         self.button_register_librarian.clicked.connect(self._show_register_librarian)
         self.button_overdue.clicked.connect(self._show_overdue)
         self.button_sign_out.clicked.connect(self._sign_out)
@@ -79,6 +93,11 @@ class LibrarianWindow(QMainWindow):
                       self.lineEdit_subject, self.lineEdit_pub_date]:
             field.setVisible(False)
             field.clear()
+
+        self.comboBox_search_type.setVisible(False)
+        self.lineEdit_search_input.setVisible(False)
+        self.lineEdit_search_input.clear()
+
         self.tableWidget_results.setVisible(False)
         self.label_result_msg.setText("")
         self.button_action.setVisible(True)
@@ -178,6 +197,74 @@ class LibrarianWindow(QMainWindow):
         self.label_page_title.setText("System overdue check")
         self.button_action.setText("Run overdue check")
 
+    def _show_search(self):
+        self._clear_content()
+        self._set_active_nav(self.button_search)
+        self.current_page = "search"
+        self.label_page_title.setText("Search catalog")
+        self.comboBox_search_type.setVisible(True)
+        self.lineEdit_search_input.setVisible(True)
+        self.lineEdit_search_input.setPlaceholderText("Enter search term...")
+        self.button_action.setText("Search")
+        self.button_secondary.setVisible(False)
+        self.tableWidget_results.setVisible(True)
+        self._setup_table(["Title", "Author", "Subject", "ISBN"])
+
+    def _show_checkout(self):
+        self._clear_content()
+        self._set_active_nav(self.button_my_checkout)
+        self.current_page = "checkout"
+        self.label_page_title.setText("Check out book")
+        self.lineEdit_search_input.setVisible(True)
+        self.lineEdit_search_input.setPlaceholderText("Enter book barcode...")
+        self.button_action.setText("Check out")
+
+    def _show_return(self):
+        self._clear_content()
+        self._set_active_nav(self.button_my_return)
+        self.current_page = "return"
+        self.label_page_title.setText("Return book")
+        self.lineEdit_search_input.setVisible(True)
+        self.lineEdit_search_input.setPlaceholderText("Enter book barcode...")
+        self.button_action.setText("Return book")
+
+    def _show_renew(self):
+        self._clear_content()
+        self._set_active_nav(self.button_my_renew)
+        self.current_page = "renew"
+        self.label_page_title.setText("Renew book")
+        self.lineEdit_search_input.setVisible(True)
+        self.lineEdit_search_input.setPlaceholderText("Enter book barcode...")
+        self.button_action.setText("Renew")
+
+    def _show_reserve(self):
+        self._clear_content()
+        self._set_active_nav(self.button_my_reserve)
+        self.current_page = "reserve"
+        self.label_page_title.setText("Reserve book")
+        self.lineEdit_search_input.setVisible(True)
+        self.lineEdit_search_input.setPlaceholderText("Enter book ISBN...")
+        self.button_action.setText("Reserve")
+
+    def _show_cancel_reservation(self):
+        self._clear_content()
+        self._set_active_nav(self.button_my_cancel_res)
+        self.current_page = "cancel_res"
+        self.label_page_title.setText("Cancel reservation")
+        self.lineEdit_search_input.setVisible(True)
+        self.lineEdit_search_input.setPlaceholderText("Enter book ISBN...")
+        self.button_action.setText("Cancel reservation")
+
+    def _show_my_books(self):
+        self._clear_content()
+        self._set_active_nav(self.button_my_books)
+        self.current_page = "my_books"
+        self.label_page_title.setText("My checked-out books")
+        self.button_action.setVisible(False)
+        self.tableWidget_results.setVisible(True)
+        self._setup_table(["Title", "Barcode", "Due Date"])
+        self._load_my_books()
+
     def _setup_table(self, headers):
         self.tableWidget_results.setColumnCount(len(headers))
         self.tableWidget_results.setHorizontalHeaderLabels(headers)
@@ -203,7 +290,13 @@ class LibrarianWindow(QMainWindow):
             "cancel_membership": self._do_cancel_membership,
             "find_borrower": self._do_find_borrower,
             "register_librarian": self._do_register_librarian,
-            "overdue": self._do_overdue
+            "overdue": self._do_overdue,
+            "search": self._do_search,
+            "checkout": self._do_checkout,
+            "return": self._do_return,
+            "renew": self._do_renew,
+            "reserve": self._do_reserve,
+            "cancel_res": self._do_cancel_reservation
         }
         if self.current_page in action_map:
             action_map[self.current_page]()
@@ -273,9 +366,81 @@ class LibrarianWindow(QMainWindow):
         msg = self._capture(NotificationService.check_overdue)
         self._show_msg(msg, success="No overdue" in msg)
 
+    def _do_search(self):
+        term = self.lineEdit_search_input.text().strip()
+        if not term:
+            self._show_msg("Please enter a search term.", success=False)
+            return
+        type_map = {0: "title", 1: "author", 2: "subject", 3: "date"}
+        search_type = type_map[self.comboBox_search_type.currentIndex()]
+        results = MemberService.search_books(term, search_type)
+        self.tableWidget_results.setRowCount(0)
+        if not results:
+            self._show_msg("No books found.", success=False)
+            return
+        for row_idx, book in enumerate(results):
+            self.tableWidget_results.insertRow(row_idx)
+            for col_idx, val in enumerate([book.title, book.author, book.subject, book.isbn]):
+                item = QTableWidgetItem(str(val))
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                self.tableWidget_results.setItem(row_idx, col_idx, item)
+        self._show_msg(f"{len(results)} result(s) found.")
+
+    def _do_checkout(self):
+        barcode = self.lineEdit_search_input.text().strip()
+        if not barcode:
+            self._show_msg("Please enter a barcode.", success=False)
+            return
+        msg = self._capture(MemberService.checkout_book, self.librarian, barcode)
+        self._show_msg(msg, success="Success" in msg)
+
+    def _do_return(self):
+        barcode = self.lineEdit_search_input.text().strip()
+        if not barcode:
+            self._show_msg("Please enter a barcode.", success=False)
+            return
+        msg = self._capture(MemberService.return_book, self.librarian, barcode)
+        self._show_msg(msg, success="Success" in msg)
+
+    def _do_renew(self):
+        barcode = self.lineEdit_search_input.text().strip()
+        if not barcode:
+            self._show_msg("Please enter a barcode.", success=False)
+            return
+        msg = self._capture(MemberService.renew_book, self.librarian, barcode)
+        self._show_msg(msg, success="Success" in msg)
+
+    def _do_reserve(self):
+        isbn = self.lineEdit_search_input.text().strip()
+        if not isbn:
+            self._show_msg("Please enter an ISBN.", success=False)
+            return
+        msg = self._capture(MemberService.reserve_book, self.librarian, isbn)
+        self._show_msg(msg, success="Success" in msg)
+
+    def _do_cancel_reservation(self):
+        isbn = self.lineEdit_search_input.text().strip()
+        if not isbn:
+            self._show_msg("Please enter an ISBN.", success=False)
+            return
+        msg = self._capture(MemberService.cancel_reservation, self.librarian, isbn)
+        self._show_msg(msg, success="Success" in msg)
+
+    def _load_my_books(self):
+        books = MemberService.get_borrowed_books_list(self.librarian.id)
+        self.tableWidget_results.setRowCount(0)
+        if not books:
+            self._show_msg("You have no books currently checked out.", success=False)
+            return
+        for row_idx, book in enumerate(books):
+            self.tableWidget_results.insertRow(row_idx)
+            for col_idx, val in enumerate(book):
+                item = QTableWidgetItem(str(val))
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                self.tableWidget_results.setItem(row_idx, col_idx, item)
+
     def _load_all_loans(self):
         loans = LibrarianService.get_all_loans_list()
-
         self.tableWidget_results.setRowCount(0)
         if not loans:
             self._show_msg("No books currently checked out.", success=False)

@@ -33,8 +33,11 @@ class LoanRepository:
 
     def get_borrower_info(self, barcode):
         return self.db.fetch_query(
-            """SELECT m.name, m.member_id, m.email, l.due_date FROM loans l 
-            JOIN members m ON l.member_id = m.member_id WHERE l.book_barcode = ? AND l.return_date IS NULL""",
+            """SELECT COALESCE(m.name, lib.name), COALESCE(m.member_id, lib.librarian_id), COALESCE(m.email, lib.email), l.due_date 
+            FROM loans l 
+            LEFT JOIN members m ON l.member_id = m.member_id
+            LEFT JOIN librarians lib ON l.member_id = lib.librarian_id
+            WHERE l.book_barcode = ? AND l.return_date IS NULL""",
             (barcode,)
         )
 
@@ -46,9 +49,13 @@ class LoanRepository:
 
     def get_all_active_loans(self):
         return self.db.fetch_query(
-            """SELECT m.name, m.member_id, b.title, l.book_barcode, l.due_date FROM loans l
-            JOIN members m ON l.member_id = m.member_id JOIN book_items bi ON l.book_barcode = bi.barcode
-            JOIN books b ON bi.isbn = b.isbn WHERE l.return_date IS NULL ORDER BY l.due_date ASC""")
+            """SELECT COALESCE(m.name, lib.name), COALESCE(m.member_id, lib.librarian_id), b.title, l.book_barcode, l.due_date 
+            FROM loans l
+            LEFT JOIN members m ON l.member_id = m.member_id 
+            LEFT JOIN librarians lib ON l.member_id = lib.librarian_id
+            JOIN book_items bi ON l.book_barcode = bi.barcode
+            JOIN books b ON bi.isbn = b.isbn 
+            WHERE l.return_date IS NULL ORDER BY l.due_date ASC""")
 
     def update_loan_due_date(self, loan_id, new_due_date):
         self.db.execute_query("UPDATE loans SET due_date = ? WHERE loan_id = ?", (str(new_due_date), loan_id))

@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
+from person import Member
 from repositories.member_repository import MemberRepository
+from repositories.librarian_repository import LibrarianRepository
 from repositories.book_repository import BookRepository
 from repositories.loan_repository import LoanRepository
 from database import DatabaseManager
@@ -56,6 +58,7 @@ class NotificationService:
         with DatabaseManager() as db:
             loan_repo = LoanRepository(db)
             member_repo = MemberRepository(db)
+            librarian_repo = LibrarianRepository(db)
 
             today = datetime.now().date()
             loans = loan_repo.get_overdue_loans(today)
@@ -67,7 +70,9 @@ class NotificationService:
             print(f"There is {len(loans)} overdue books")
             for loan in loans:
                 member_id, barcode, due_date_str, title = loan
-                member = member_repo.get_member(member_id)
+
+                member = member_repo.get_member(member_id) or librarian_repo.get_librarian(member_id)
+
                 if member:
                     due_date = datetime.strptime(due_date_str, "%Y-%m-%d").date()
                     notifier = EmailNotification()
