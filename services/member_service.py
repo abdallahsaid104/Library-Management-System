@@ -21,7 +21,7 @@ class MemberService:
             member_repo = MemberRepository(db)
 
             book_item = book_repo.get_book_item(barcode)
-            item_status = book_item[0][3] if book_item else None
+            item_status = book_item.status if book_item else None
 
             if not book_item or item_status != 'available':
                 print("ERROR: Book not available.")
@@ -78,7 +78,7 @@ class MemberService:
                 print("ERROR: Book does not exist")
                 return False
 
-            book_title = book[0][0]
+            book_title = book.title
             today = datetime.now().date()
             member_repo.add_reservation(member.id, isbn, today)
 
@@ -101,7 +101,7 @@ class MemberService:
 
             info = book_repo.get_book_item(barcode)
             if info:
-                isbn = info[0][1]
+                isbn = info.isbn
                 reservation = member_repo.get_waiting_reservation(isbn)
                 if reservation:
                     print(f"ERROR: This book (ISBN: {isbn}) is reserved by another member")
@@ -146,3 +146,15 @@ class MemberService:
             print(f"- Title: {book[0]} | Barcode: {book[1]} | Due: {book[2]}")
 
         return True
+
+    @staticmethod
+    def search_books(search_term, search_type):
+        with DatabaseManager() as db:
+            book_repo = BookRepository(db)
+            return book_repo.search_books(search_term, search_type)
+
+    @staticmethod
+    def get_borrowed_books_list(member_id):
+        with DatabaseManager() as db:
+            loan_repo = LoanRepository(db)
+            return loan_repo.get_borrowed_books_by_member(member_id)

@@ -33,8 +33,8 @@ class DatabaseManager:
                         FOREIGN KEY (member_id) REFERENCES members (member_id), FOREIGN KEY (isbn) REFERENCES books (isbn)
                         )""")
 
-        self.cursor.execute("""CREATE TABLE IF NOT EXISTS librarians (name TEXT NOT NULL,
-                        librarian_id TEXT PRIMARY KEY, email TEXT, password TEXT)""")
+        self.cursor.execute("""CREATE TABLE IF NOT EXISTS librarians (name TEXT NOT NULL, librarian_id TEXT PRIMARY KEY,
+                            email TEXT, checkout_count INTEGER DEFAULT 0, password TEXT)""")
 
         self.connect.commit()
 
@@ -87,9 +87,9 @@ class DatabaseManager:
         self.cursor.executemany("INSERT INTO members VALUES (?, ?, ?, ?, ?)", members)
 
         librarians = [
-            ("Admin Librarian", "LIB-001", "admin@library.com", "admin123")
+            ("Admin Librarian", "LIB-001", "admin@library.com", 0, "admin123")
         ]
-        self.cursor.executemany("INSERT INTO librarians VALUES (?, ?, ?, ?)", librarians)
+        self.cursor.executemany("INSERT INTO librarians VALUES (?, ?, ?, ?, ?)", librarians)
 
         self.connect.commit()
         print("Library database initialized with dummy data")

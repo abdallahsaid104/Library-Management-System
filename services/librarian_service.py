@@ -88,7 +88,7 @@ class LibrarianService:
                 print(f"Error: Item {barcode} not found.")
                 return False
 
-            if item[0][3] == 'loaned':
+            if item.status == 'loaned':
                 print("Error: Cannot remove this book as it is currently checked out")
                 return False
             repo.remove_book_item(barcode)
@@ -124,13 +124,13 @@ class LibrarianService:
     def get_book_borrower(barcode):
         with DatabaseManager() as db:
             repo = LoanRepository(db)
-            member = repo.get_borrower_info(barcode)
-            if not member:
+            borrower_info = repo.get_borrower_info(barcode)
+            if not borrower_info:
                 print(f"Book {barcode} is currently available (not checked out)")
                 return False
 
-            print(f"Book {barcode} is currently borrowed by: {member[0][0]} (ID: {member[0][1]})")
-            print(f"Email: {member[0][2]} | Due Date: {member[0][3]}")
+            print(f"Book {barcode} is currently borrowed by: {borrower_info[0][0]} (ID: {borrower_info[0][1]})")
+            print(f"Email: {borrower_info[0][2]} | Due Date: {borrower_info[0][3]}")
         return True
 
     @staticmethod
@@ -154,7 +154,7 @@ class LibrarianService:
             if not books:
                 print("No books currently checked out")
                 return False
-            print(f"currently checked out books: {len(books)}")
+            print(f"Currently checked out books: {len(books)}")
             print(f"{'Member Name':<20} | {'Book Title':<25} | {'Barcode':<8} | {'Due Date'}")
             print("----------------------------------------------------------------------------")
             for book in books:
@@ -169,10 +169,15 @@ class LibrarianService:
             if not member:
                 print("Error: Member not found")
                 return False
-            checkout_count = member[0][3]
-            if checkout_count > 0:
+            if member.checkout_count > 0:
                 print("Error: We can not cancel this membership now as this member has books checked out currently")
                 return False
             repo.delete_member(member_id)
             print(f"Success: Membership cancelled for {member_id}")
         return True
+
+    @staticmethod
+    def get_all_loans_list():
+        with DatabaseManager() as db:
+            repo = LoanRepository(db)
+            return repo.get_all_active_loans()

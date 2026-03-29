@@ -1,9 +1,13 @@
+from person import Member
+
+
 class MemberRepository:
     def __init__(self, db):
         self.db = db
 
     def get_member(self, member_id):
-        return self.db.fetch_query("SELECT * FROM members WHERE member_id = ?", (member_id,))
+        result = self.db.fetch_query("SELECT * FROM members WHERE member_id = ?", (member_id,))
+        return Member.from_db_row(result[0]) if result else None
 
     def update_checkout_count(self, member_id, increment):
         if increment:

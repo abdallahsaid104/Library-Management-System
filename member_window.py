@@ -4,10 +4,7 @@ import sys
 from PyQt5 import uic
 from PyQt5.QtWidgets import QMainWindow, QTableWidgetItem
 from PyQt5.QtCore import Qt
-from database import DatabaseManager
 from services.member_service import MemberService
-from repositories.loan_repository import LoanRepository
-from book import Book
 from styles import (MAIN_STYLE, BUTTON_PRIMARY, LABEL_TITLE, LABEL_ERROR,
                     LABEL_SUCCESS, LABEL_SECTION, LABEL_AVATAR,
                     LABEL_MEMBER_NAME, LABEL_BADGE_MEMBER, WIDGET_SIDEBAR,
@@ -179,7 +176,9 @@ class MemberWindow(QMainWindow):
             return
         type_map = {0: "title", 1: "author", 2: "subject", 3: "date"}
         search_type = type_map[self.comboBox_search_type.currentIndex()]
-        results = Book.search_books(term, search_type)
+
+        results = MemberService.search_books(term, search_type)
+
         self.tableWidget_results.setRowCount(0)
         if not results:
             self._show_msg("No books found.", success=False)
@@ -233,9 +232,7 @@ class MemberWindow(QMainWindow):
         self._show_msg(msg, success="Success" in msg)
 
     def _load_my_books(self):
-        with DatabaseManager() as db:
-            repo = LoanRepository(db)
-            books = repo.get_borrowed_books_by_member(self.member.id)
+        books = MemberService.get_borrowed_books_list(self.member.id)
 
         self.tableWidget_results.setRowCount(0)
         if not books:

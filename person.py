@@ -1,7 +1,4 @@
 from datetime import datetime, timedelta
-from database import DatabaseManager
-from repositories.member_repository import MemberRepository
-from repositories.librarian_repository import LibrarianRepository
 
 
 class Person:
@@ -26,7 +23,7 @@ class Member(Person):
 
     def __str__(self):
         base_info = super().__str__()
-        return f"{base_info}\nRole: Member\nChecked Out: {self.checkout_count}/{self.MaxBooksLimit}"
+        return f"{base_info}\nChecked Out: {self.checkout_count}/{self.MaxBooksLimit}"
 
     def check_password(self, input_password):
         return self.password == input_password
@@ -47,33 +44,19 @@ class Member(Person):
             print(f"Book is returned on time, No Fine")
         return fine
 
-    @staticmethod
-    def get_member(member_id):
-        with DatabaseManager() as db:
-            repo = MemberRepository(db)
-            member_data = repo.get_member(member_id)
-            if member_data:
-                return Member(*member_data[0])
-        return None
+    @classmethod
+    def from_db_row(cls, row):
+        return cls(row[0], row[1], row[2], row[3], row[4])
 
 
-class Librarian(Person):
-    def __init__(self, name, librarian_id, email, password=None):
-        super().__init__(name, librarian_id, email)
-        self.password = password
+class Librarian(Member):
+    def __init__(self, name, librarian_id, email, checkout_count=0, password=None):
+        super().__init__(name, librarian_id, email, checkout_count, password)
 
     def __str__(self):
         base_info = super().__str__()
         return f"{base_info}\nRole: Librarian"
 
-    def check_password(self, input_password):
-        return self.password == input_password
-
-    @staticmethod
-    def get_librarian(librarian_id):
-        with DatabaseManager() as db:
-            repo = LibrarianRepository(db)
-            librarian_data = repo.get_librarian(librarian_id)
-            if librarian_data:
-                return Librarian(*librarian_data[0])
-        return None
+    @classmethod
+    def from_db_row(cls, row):
+        return cls(row[0], row[1], row[2], row[3], row[4])

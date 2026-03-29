@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from person import Member
 from repositories.member_repository import MemberRepository
 from repositories.book_repository import BookRepository
 from repositories.loan_repository import LoanRepository
@@ -38,19 +37,19 @@ class NotificationService:
 
             item = book_repo.get_book_item(barcode)
             if not item:
-                return
+                return False
 
-            isbn = item[0][1]
+            isbn = item.isbn
             reservation = member_repo.get_waiting_reservation(isbn)
 
             if reservation:
                 member_id = reservation[0][0]
-                member_data = member_repo.get_member(member_id)
-                if member_data:
-                    member = Member(*member_data[0])
+                member = member_repo.get_member(member_id)
+                if member:
                     notifier = EmailNotification()
                     notifier.send(member, f"The book {isbn} you reserved is now available")
                     member_repo.update_reservation_status(member.id, isbn, 'notified')
+        return True
 
     @staticmethod
     def check_overdue():
@@ -68,10 +67,8 @@ class NotificationService:
             print(f"There is {len(loans)} overdue books")
             for loan in loans:
                 member_id, barcode, due_date_str, title = loan
-                member_data = member_repo.get_member(member_id)
-                if member_data:
-                    member = Member(member_data[0][0], member_data[0][1], member_data[0][2], member_data[0][3],
-                                    member_data[0][4])
+                member = member_repo.get_member(member_id)
+                if member:
                     due_date = datetime.strptime(due_date_str, "%Y-%m-%d").date()
                     notifier = EmailNotification()
                     notifier.send(member, f"OVERDUE ALERT: '{title}' was due on {due_date}")

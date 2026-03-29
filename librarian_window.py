@@ -4,10 +4,8 @@ import sys
 from PyQt5 import uic
 from PyQt5.QtWidgets import QMainWindow, QTableWidgetItem
 from PyQt5.QtCore import Qt
-from database import DatabaseManager
 from services.librarian_service import LibrarianService
 from services.notification_service import NotificationService
-from repositories.loan_repository import LoanRepository
 from styles import (MAIN_STYLE, BUTTON_PRIMARY, LABEL_TITLE, LABEL_ERROR,
                     LABEL_SUCCESS, LABEL_SECTION, LABEL_AVATAR,
                     LABEL_MEMBER_NAME, LABEL_BADGE_LIBRARIAN, WIDGET_SIDEBAR,
@@ -276,9 +274,7 @@ class LibrarianWindow(QMainWindow):
         self._show_msg(msg, success="No overdue" in msg)
 
     def _load_all_loans(self):
-        with DatabaseManager() as db:
-            repo = LoanRepository(db)
-            loans = repo.get_all_active_loans()
+        loans = LibrarianService.get_all_loans_list()
 
         self.tableWidget_results.setRowCount(0)
         if not loans:
