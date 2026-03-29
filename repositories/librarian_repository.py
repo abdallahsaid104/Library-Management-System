@@ -1,4 +1,3 @@
-from database import DatabaseManager
 from person import Librarian
 
 

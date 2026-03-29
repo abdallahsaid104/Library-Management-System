@@ -1,6 +1,5 @@
 from datetime import datetime
 from database import DatabaseManager
-from person import Member
 from services.notification_service import EmailNotification, NotificationService
 from repositories.member_repository import MemberRepository
 from repositories.book_repository import BookRepository

@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from person import Member
 from repositories.member_repository import MemberRepository
 from repositories.librarian_repository import LibrarianRepository
 from repositories.book_repository import BookRepository

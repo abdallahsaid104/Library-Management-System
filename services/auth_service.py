@@ -1,5 +1,4 @@
 from database import DatabaseManager
-from person import Member, Librarian
 from repositories.member_repository import MemberRepository
 from repositories.librarian_repository import LibrarianRepository
 
