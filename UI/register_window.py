@@ -4,12 +4,14 @@ import sys
 from PyQt5 import uic
 from PyQt5.QtWidgets import QDialog
 from services.librarian_service import LibrarianService
-from styles import (MAIN_STYLE, BUTTON_PRIMARY, LABEL_TITLE,
-                    LABEL_SUBTITLE, LABEL_ERROR, LABEL_SUCCESS, LABEL_LINK)
+from UI.styles import (MAIN_STYLE, BUTTON_PRIMARY, LABEL_TITLE,
+                       LABEL_SUBTITLE, LABEL_ERROR, LABEL_SUCCESS, LABEL_LINK)
 
-UI_PATH = os.path.join(os.path.dirname(__file__), "ui", "register.ui")
+UI_PATH = os.path.join(os.path.dirname(__file__), "", "register.ui")
 
-
+"""
+The application stores all its data in a single SQLite database file called library.db, which contains six tables. When the application starts, it automatically checks if these tables exist and creates them if they don’t. This setup is handled by the DatabaseManager. The process is safe to run every time the app starts, because it won’t recreate or overwrite tables that already exist.
+"""
 class RegisterWindow(QDialog):
     def __init__(self, login_window):
         super().__init__()

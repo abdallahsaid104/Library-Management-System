@@ -1,5 +1,5 @@
 from database import DatabaseManager
-from book import Book
+from models.book import Book
 from services.librarian_service import LibrarianService
 from services.member_service import MemberService
 from services.notification_service import NotificationService

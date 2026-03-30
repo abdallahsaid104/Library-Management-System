@@ -2,11 +2,14 @@ import os
 from PyQt5 import uic
 from PyQt5.QtWidgets import QDialog
 from services.auth_service import AuthService
-from styles import (MAIN_STYLE, BUTTON_PRIMARY, BUTTON_ROLE_ACTIVE,
-                    BUTTON_ROLE_INACTIVE, LABEL_TITLE, LABEL_SUBTITLE,
-                    LABEL_ERROR, LABEL_LINK)
+from UI.member_window import MemberWindow
+from UI.librarian_window import LibrarianWindow
+from UI.register_window import RegisterWindow
+from UI.styles import (MAIN_STYLE, BUTTON_PRIMARY, BUTTON_ROLE_ACTIVE,
+                       BUTTON_ROLE_INACTIVE, LABEL_TITLE, LABEL_SUBTITLE,
+                       LABEL_ERROR, LABEL_LINK)
 
-UI_PATH = os.path.join(os.path.dirname(__file__), "ui", "login.ui")
+UI_PATH = os.path.join(os.path.dirname(__file__), "", "login.ui")
 
 
 class LoginWindow(QDialog):
@@ -70,19 +73,16 @@ class LoginWindow(QDialog):
                 self.label_error.setText("Invalid librarian ID or password.")
 
     def _open_member_portal(self, member):
-        from member_window import MemberWindow
         self.member_window = MemberWindow(member, self)
         self.member_window.show()
         self.hide()
 
     def _open_librarian_portal(self, librarian):
-        from librarian_window import LibrarianWindow
         self.librarian_window = LibrarianWindow(librarian, self)
         self.librarian_window.show()
         self.hide()
 
     def _open_register(self):
-        from register_window import RegisterWindow
         self.register_window = RegisterWindow(self)
         self.register_window.show()
         self.hide()

@@ -1,4 +1,4 @@
-from book import Book, BookItem
+from models.book import Book, BookItem
 
 
 class BookRepository:

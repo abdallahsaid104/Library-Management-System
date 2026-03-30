@@ -1,4 +1,4 @@
-from person import Member
+from models.person import Member
 
 
 class MemberRepository:

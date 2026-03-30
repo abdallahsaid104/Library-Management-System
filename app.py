@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication
 from database import DatabaseManager
-from login_window import LoginWindow
+from UI.login_window import LoginWindow
 
 
 def main():

@@ -34,6 +34,7 @@
      <property name="font">
       <font>
        <pointsize>24</pointsize>
+       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -86,7 +87,7 @@
    <item>
     <widget class="QLineEdit" name="lineEdit_member_id">
      <property name="placeholderText">
-      <string>MEM - 001</string>
+      <string>ID</string>
      </property>
     </widget>
    </item>
@@ -121,6 +122,7 @@
     <widget class="QPushButton" name="button_register">
      <property name="font">
       <font>
+       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>

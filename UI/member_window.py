@@ -5,12 +5,12 @@ from PyQt5 import uic
 from PyQt5.QtWidgets import QMainWindow, QTableWidgetItem
 from PyQt5.QtCore import Qt
 from services.member_service import MemberService
-from styles import (MAIN_STYLE, BUTTON_PRIMARY, LABEL_TITLE, LABEL_ERROR,
-                    LABEL_SUCCESS, LABEL_SECTION, LABEL_AVATAR,
-                    LABEL_MEMBER_NAME, LABEL_BADGE_MEMBER, WIDGET_SIDEBAR,
-                    BUTTON_SIGN_OUT)
+from UI.styles import (MAIN_STYLE, BUTTON_PRIMARY, LABEL_TITLE, LABEL_ERROR,
+                       LABEL_SUCCESS, LABEL_SECTION, LABEL_AVATAR,
+                       LABEL_MEMBER_NAME, LABEL_BADGE_MEMBER, WIDGET_SIDEBAR,
+                       BUTTON_SIGN_OUT)
 
-UI_PATH = os.path.join(os.path.dirname(__file__), "ui", "member_portal.ui")
+UI_PATH = os.path.join(os.path.dirname(__file__), "", "member_portal.ui")
 
 
 class MemberWindow(QMainWindow):

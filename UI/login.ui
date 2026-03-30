@@ -136,7 +136,7 @@
    <item>
     <widget class="QLineEdit" name="lineEdit_id">
      <property name="placeholderText">
-      <string>MEM - 001</string>
+      <string>Enter Your ID</string>
      </property>
     </widget>
    </item>

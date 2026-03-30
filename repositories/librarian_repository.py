@@ -1,4 +1,4 @@
-from person import Librarian
+from models.person import Librarian
 
 
 class LibrarianRepository:

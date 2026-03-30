@@ -7,12 +7,12 @@ from PyQt5.QtCore import Qt
 from services.librarian_service import LibrarianService
 from services.member_service import MemberService
 from services.notification_service import NotificationService
-from styles import (MAIN_STYLE, BUTTON_PRIMARY, LABEL_TITLE, LABEL_ERROR,
-                    LABEL_SUCCESS, LABEL_SECTION, LABEL_AVATAR,
-                    LABEL_MEMBER_NAME, LABEL_BADGE_LIBRARIAN, WIDGET_SIDEBAR,
-                    BUTTON_SIGN_OUT)
+from UI.styles import (MAIN_STYLE, BUTTON_PRIMARY, LABEL_TITLE, LABEL_ERROR,
+                       LABEL_SUCCESS, LABEL_SECTION, LABEL_AVATAR,
+                       LABEL_MEMBER_NAME, LABEL_BADGE_LIBRARIAN, WIDGET_SIDEBAR,
+                       BUTTON_SIGN_OUT)
 
-UI_PATH = os.path.join(os.path.dirname(__file__), "ui", "librarian_portal.ui")
+UI_PATH = os.path.join(os.path.dirname(__file__), "", "librarian_portal.ui")
 
 
 class LibrarianWindow(QMainWindow):
