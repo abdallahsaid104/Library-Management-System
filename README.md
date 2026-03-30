@@ -31,98 +31,107 @@ The core codebase is organized into **N-Tier Layered Architecture**. Each layer 
 | **Encapsulation** | SQL is never exposed outside repository classes; services interact with domain objects only                 |
 | **Abstraction**   | Service methods hide all implementation details — callers only see `checkout_book()`, not the SQL behind it |
 
-
 ---
+
 # Database Schema
 
 The application stores all its data in a single SQLite database file called `library.db`, which contains six tables. When the application starts, it automatically checks if these tables exist and creates them if they don’t. This setup is handled by the `DatabaseManager`. The process is safe to run every time the app starts, because it won’t recreate or overwrite tables that already exist.
 ![Screenshot](images/schema.png)
 
 ## Tables
+
 ### books
+
 - purpose: Book catalog entities
 - primary key: isbn
 
 | Column           | Type | Constraints | Description            |
 |------------------|------|-------------|------------------------|
 | isbn             | TEXT | PRIMARY KEY | Unique book identifier |
-| title            | TEXT | NOT NULL    | Title of the book      | 
-| author           | TEXT | NOT NULL    | Author of the book     | 
-| subject          | TEXT |             | Category               | 
-| publication_date | TEXT |             | Publication date       | 
-
+| title            | TEXT | NOT NULL    | Title of the book      |
+| author           | TEXT | NOT NULL    | Author of the book     |
+| subject          | TEXT |             | Category               |
+| publication_date | TEXT |             | Publication date       |
 
 ### book_items
+
 - purpose: represents physical copies of a book
 - primary key: barcode
 
 | Column  | Type | Constraints               | Description                     |
 |---------|------|---------------------------|---------------------------------|
 | barcode | TEXT | PRIMARY KEY               | Unique physical copy identifier |
-| isbn    | TEXT | FOREIGN KEY ➝ books(isbn) | Which book this copy belongs to | 
-| rack    | TEXT |                           | physical location               | 
-| statue  | TEXT | DEFAULT `available`       | available, loaned, damaged      | 
+| isbn    | TEXT | FOREIGN KEY ➝ books(isbn) | Which book this copy belongs to |
+| rack    | TEXT |                           | physical location               |
+| statue  | TEXT | DEFAULT `available`       | available, loaned, damaged      |
 
 ### members
+
 - purpose: stores library members (and inherits behaviour to librarians)
 - primary key: member_id
 
 | Column         | Type    | Constraints | Description                         |
 |----------------|---------|-------------|-------------------------------------|
 | member_id      | TEXT    | PRIMARY KEY | Unique member identifier            |
-| name           | TEXT    | NOT NULL    | Full name                           | 
-| email          | TEXT    |             | Contact Email                       | 
+| name           | TEXT    | NOT NULL    | Full name                           |
+| email          | TEXT    |             | Contact Email                       |
 | checkout_count | INTEGER | DEFAULT `0` | Current number of books checked out |
-| password       | TEXT    |             | Account Password                    | 
+| password       | TEXT    |             | Account Password                    |
 
 ### librarians
+
 - purpose: stores librarian staff (inherits member capabilities)
 - primary key: librarian_id
 
 | Column         | Type    | Constraints | Description                         |
 |----------------|---------|-------------|-------------------------------------|
 | librarian_id   | TEXT    | PRIMARY KEY | Unique librarian identifier         |
-| name           | TEXT    | NOT NULL    | Full name                           | 
-| email          | TEXT    |             | Contact Email                       | 
+| name           | TEXT    | NOT NULL    | Full name                           |
+| email          | TEXT    |             | Contact Email                       |
 | checkout_count | INTEGER | DEFAULT `0` | Current number of books checked out |
 | password       | TEXT    |             | Account Password                    |
 
 ### loans
+
 - purpose: tracks which member has which physical copy
 - primary key: loan_id (Automatically)
 
 | Column       | Type    | Constraints                       | Description                   |
 |--------------|---------|-----------------------------------|-------------------------------|
 | loan_id      | INTEGER | PRIMARY KEY AUTOINCREMENT         | Unique transaction identifier |
-| member_id    | TEXT    | FOREIGN KEY ➝ members(member_id)  | Who borrowed it               | 
-| book_barcode | TEXT    | FOREIGN KEY ➝ book_items(barcode) | which physical copy           | 
+| member_id    | TEXT    | FOREIGN KEY ➝ members(member_id)  | Who borrowed it               |
+| book_barcode | TEXT    | FOREIGN KEY ➝ book_items(barcode) | which physical copy           |
 | issue_date   | INTEGER | DEFAULT `0`                       | When it was checked out       |
 | due_date     | TEXT    |                                   | When it must be returned      |
 | return_date  | TEXT    |                                   | NULL if currently borrowed    |
 | fine_amount  | REAL    | DEFAULT `0.0`                     | Fine calculated upon return   |
 
 ### Reservations
+
 - purpose: tracks queue for books that are currently checked out
 - primary key: reservation_id (Automatically)
 
 | Column           | Type    | Constraints                      | Description                   |
 |------------------|---------|----------------------------------|-------------------------------|
 | reservation_id   | INTEGER | PRIMARY KEY AUTOINCREMENT        | Unique reservation identifier |
-| member_id        | TEXT    | FOREIGN KEY ➝ members(member_id) | Who wants the book            | 
-| isbn             | TEXT    | FOREIGN KEY ➝ books(isbn)        | which book they want          | 
+| member_id        | TEXT    | FOREIGN KEY ➝ members(member_id) | Who wants the book            |
+| isbn             | TEXT    | FOREIGN KEY ➝ books(isbn)        | which book they want          |
 | reservation_date | TEXT    |                                  | When the request was made     |
 | statue           | TEXT    | DEFAULT `waiting`                | waiting, notified, cancelled  |
 
 ---
-##  Features
+
+## Features
 
 ### Member Portal
+
 - Search the catalog by **Title**, **Author**, **Subject**, or **Publication Date**
 - **Check out**, **return**, and **renew** books
 - **Reserve** unavailable books — automatically notified when returned
 - View currently checked-out books (for himself) and **fine calculations**
 
 ### Librarian Portal
+
 - Full member capabilities (librarians can check out books for themselves)
 - **Catalog management** — add/edit books, manage physical copies, barcodes, and rack numbers
 - **User management** — register or delete members and librarians
@@ -166,50 +175,77 @@ Library-Management-System/
 ```
 
 ---
+## Classes Interface
+
+### Models
+![Screenshot](images/domain.png)
+
+### Repositories
+![Screenshot](images/repositories.png)
+
+### Services
+![Screenshot](images/service.png)
+
+### Service-Repo-Domain
+![Screenshot](images/three_layer.png)
+---
 ## UI
+
 ### Dynamic UI Messaging
+
 Because the service layer returns boolean values and prints to stdout (supporting both CLI and GUI), the PyQt5 windows use `io.StringIO` to **capture standard output dynamically** and display it as colored success/error messages in the UI — keeping the UI fully decoupled from backend string formatting.
 
  PyQt5 interfaces
-### Login window:
-![Screenshot](images/login.png) 
 
-### register window:
+### Login window
+
+![Screenshot](images/login.png)
+
+### register window
+
 ![Screenshot](images/register.png)
 
-### Member window:
+### Member window
+
 ![Screenshot](images/member.png)
 
-### Librarian window:
+### Librarian window
+
 ![Screenshot](images/librarian.png)
 
 ## Setup & Installation
 
 ### Prerequisites
+
 - Python **3.8+**
 
 ### Step 1 — Clone the Repository
+
 ```bash
 git clone <https://github.com/abdallahsaid104/Library-Management-System>
 cd Library-Management-System
 ```
 
 ### Step 2 — Create & Activate a Virtual Environment
+
 Recommended to avoid conflicts with other packages on your system.
 
 **macOS / Linux:**
+
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
 **Windows:**
+
 ```bash
 python -m venv venv
 venv\Scripts\activate
 ```
 
 ### Step 3 — Install Dependencies
+
 Once your virtual environment is active (you'll see `(venv)` in your terminal):
 
 ```bash
@@ -220,6 +256,7 @@ uv pip install PyQt5 pytest pytest-mock
 ```
 
 ### Step 4 — Run the Application
+
 The app will automatically generate `library.db` and seed it with dummy data on the first run.
 
 ```bash
@@ -230,6 +267,7 @@ uv run app.py     # GUI
 ```
 
 ### Step 5 — Run the Automated Tests
+
 Thanks to Dependency Injection, tests run in milliseconds with no live database required.
 
 ```bash
@@ -237,12 +275,5 @@ pytest tests/test_repository.py -v
 # or (if using uv)
 uv run pytest tests/test_repositories.py -v
 ```
+
 ![Screenshot](images/tests.png)
----
-
-
-
-
-
-
-
