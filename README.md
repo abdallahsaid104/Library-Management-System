@@ -119,6 +119,14 @@ The application stores all its data in a single SQLite database file called `lib
 | reservation_date | TEXT    |                                  | When the request was made     |
 | statue           | TEXT    | DEFAULT `waiting`                | waiting, notified, cancelled  |
 
+## Dummy data
+| isbn          | title               | author              | subject            | publication_date |
+|---------------|---------------------|---------------------|--------------------|------------------|
+| 9780141439518 | Pride and Prejudice | Jane Austen         | Classic literature | 2002-12-31       |
+| 9780735211292 | Atomic Habits       | James Clear         | Self-development   | 2018-10-16       |
+| 9780743273565 | The Great Gatsby    | F. Scott Fitzgerald | Fiction            | 2004-09-30       |
+| 9780132350884 | Clean Code          | Robert C. Martin    | Programming        | 2008-08-01       |
+| 9781612680194 | Rich Dad Poor Dad   | Robert T. Kiyosaki  | Personal finance   | 2017-04-01       |
 ---
 
 ## Features
@@ -172,6 +180,7 @@ Library-Management-System/
 |
 |--- tests/                     # Automated Test Suite
     |--- test_repositories.py
+    |--- test_services.py
 ```
 
 ---

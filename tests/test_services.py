@@ -2,10 +2,12 @@ import pytest
 from unittest.mock import MagicMock, patch, call
 from datetime import date
 from services.auth_service import AuthService
+from services.member_service import MemberService
+from services.notification_service import EmailNotification
 
 
 # ------------------------------- Helpers ---------------------------------------
-def make_member(name="zezo", member_id="MEM-001", email="ahmed@email.com", checkout_count=0):
+def make_member(name="zezo", member_id="MEM-001", email="zezo@email.com", checkout_count=0):
     m = MagicMock()
     m.name = name
     m.id = member_id
@@ -26,6 +28,22 @@ def make_librarian(name="Admin", librarian_id="LIB-001", email="admin@lib.com"):
     lib.email = email
     lib.check_password.return_value = True
     return lib
+
+
+def make_book_item(barcode="B0001", isbn="999-999", rack="A1", status="available"):
+    item = MagicMock()
+    item.barcode = barcode
+    item.isbn = isbn
+    item.rack = rack
+    item.status = status
+    return item
+
+
+def make_book(isbn="999-999", title="Clean Code"):
+    book = MagicMock()
+    book.isbn = isbn
+    book.title = title
+    return book
 
 
 class TestAuthService:
